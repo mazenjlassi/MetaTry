@@ -1,7 +1,9 @@
 package com.example.metatry.DTOs;
 
+import com.example.metatry.Enums.PlatformType;
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class UpdatePostRequest {
@@ -10,7 +12,7 @@ public class UpdatePostRequest {
 
     private String hashtags;
 
-    private String platform;
+    private PlatformType platform;
 
     private String imageUrl;
 

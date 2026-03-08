@@ -10,35 +10,42 @@ import java.util.function.Supplier;
 public class TokenConfig {
 
     /**
-     * Fournit un Supplier qui donne toujours un token valide
-     * Utilisé par FacebookService et InstagramService
+     * Supplier that always returns a valid page token
      */
     @Bean
     public Supplier<String> pageTokenSupplier(FacebookTokenService tokenService) {
+
         return () -> {
-            String token = tokenService.getCurrentPageToken();
+
+            String token = tokenService.getPageToken();
+
             if (token == null) {
-                throw new RuntimeException("❌ Token de page non disponible");
+                throw new RuntimeException("❌ Facebook page token not available");
             }
+
             return token;
         };
     }
 
     /**
-     * Provider avec plus de fonctionnalités
+     * Advanced token provider
      */
     @Bean
     public TokenProvider tokenProvider(FacebookTokenService tokenService) {
+
         return new TokenProvider() {
+
             @Override
             public String getToken() {
-                return tokenService.getCurrentPageToken();
+                return tokenService.getPageToken();
             }
 
             @Override
             public String getTokenWithRefresh() {
-                tokenService.forceRefresh();
-                return tokenService.getCurrentPageToken();
+
+                tokenService.refreshPageToken();
+
+                return tokenService.getPageToken();
             }
 
             @Override
@@ -48,18 +55,19 @@ public class TokenConfig {
 
             @Override
             public void refresh() {
-                tokenService.forceRefresh();
+                tokenService.refreshPageToken();
             }
         };
     }
 
-    /**
-     * Interface pour le provider de token
-     */
     public interface TokenProvider {
+
         String getToken();
+
         String getTokenWithRefresh();
+
         boolean isTokenValid();
+
         void refresh();
     }
 }

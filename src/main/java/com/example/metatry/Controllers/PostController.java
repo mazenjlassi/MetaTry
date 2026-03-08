@@ -5,6 +5,7 @@ import com.example.metatry.Models.Post;
 import com.example.metatry.Repositories.PostRepository;
 import com.example.metatry.Services.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,10 +24,12 @@ public class PostController {
     }
 
     @PutMapping("/{id}")
-    public Post updatePost(
+    public ResponseEntity<String> updatePost(
             @PathVariable Long id,
             @RequestBody UpdatePostRequest request){
 
-        return postService.updatePost(id, request);
+        postService.updatePost(id, request);
+
+        return ResponseEntity.ok("Post updated");
     }
 }

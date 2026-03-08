@@ -2,19 +2,16 @@ package com.example.metatry.DTOs;
 
 import lombok.Data;
 import java.util.List;
-
 @Data
 public class AiGeneratedContent {
 
-    private String postText;
+    private String linkedinPost;
+    private List<String> linkedinHashtags;
 
-    private List<String> hashtags;
+    private String instagramPost;
+    private List<String> instagramHashtags;
 
-    private String imagePrompt;
+    private String facebookPost;
+    private List<String> facebookHashtags;
 
-    private String videoScript;
-
-    private String videoPrompt;
-
-    private String cta;
 }
