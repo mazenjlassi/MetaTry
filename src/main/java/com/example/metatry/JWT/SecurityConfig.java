@@ -41,6 +41,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/facebook/**").authenticated()
                         .requestMatchers("/api/instagram/**").authenticated()
                         .requestMatchers("/api/linkedin/**").authenticated()
+                        .requestMatchers("/publish/**").authenticated()
+
 
                         // ✅ TOUT LE RESTE
                         .anyRequest().authenticated()

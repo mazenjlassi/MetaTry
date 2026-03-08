@@ -52,8 +52,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println("Pas de token Bearer - 401");
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            System.out.println("No JWT token found");
+            filterChain.doFilter(request, response);
             return;
         }
 

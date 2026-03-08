@@ -1,57 +1,76 @@
 package com.example.metatry.Services;
 
 import com.example.metatry.Enums.PlatformType;
+import com.example.metatry.Enums.PostStatus;
 import com.example.metatry.Models.Post;
 import com.example.metatry.Repositories.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class SocialPublisherService {
 
-    private final PostRepository postRepository;
-
     private final FacebookService facebookService;
     private final InstagramService instagramService;
     private final LinkedInService linkedInService;
+    private final PostRepository postRepository;
 
-    /*
-     public void publishPost(Long postId){
-
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
+    public Post publishPost(Post post) {
 
         if(!post.getApproved()){
             throw new RuntimeException("Post must be approved before publishing");
         }
 
-        String message = post.getContent();
+        PlatformType platform = post.getPlatform();
 
-        if(post.getHashtags() != null){
-            message += "\n\n" + post.getHashtags();
+        switch (platform){
+
+            case FACEBOOK -> publishFacebook(post);
+
+            case INSTAGRAM -> publishInstagram(post);
+
+            case LINKEDIN -> publishLinkedin(post);
         }
 
-        for(PlatformType platform : post.getPlatforms()){
+        post.setStatus(PostStatus.PUBLISHED);
+        post.setPublishedAt(LocalDateTime.now());
 
-            switch(platform){
-
-                case FACEBOOK -> facebookService.postText(message);
-
-                case INSTAGRAM -> instagramService.postPhotoFromUrl(
-                        post.getImageUrl(),
-                        message
-                );
-
-                case LINKEDIN -> linkedInService.postText(message);
-
-            }
-        }
-
-        post.setPublishedAt(java.time.LocalDateTime.now());
-
-        postRepository.save(post);
+        return postRepository.save(post);
     }
 
-     */
+    private void publishFacebook(Post post){
+
+        Map<String,Object> result =
+                facebookService.postText(post.getContent());
+
+        System.out.println("Facebook publish result: " + result);
+    }
+
+    private void publishInstagram(Post post){
+
+        if(post.getImageUrl() == null){
+            throw new RuntimeException("Instagram requires an imageUrl");
+        }
+
+        Map<String,Object> result =
+                instagramService.postPhotoFromUrl(
+                        post.getImageUrl(),
+                        post.getContent()
+                );
+
+        System.out.println("Instagram publish result: " + result);
+    }
+
+    private void publishLinkedin(Post post){
+
+        Map<String,Object> result =
+                linkedInService.postText(post.getContent());
+
+        System.out.println("LinkedIn publish result: " + result);
+    }
+
 }
