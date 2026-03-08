@@ -1,6 +1,8 @@
 package com.example.metatry.Controllers;
 
+import com.example.metatry.DTOs.PostStatsResponse;
 import com.example.metatry.DTOs.UpdatePostRequest;
+import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Models.Post;
 import com.example.metatry.Repositories.PostRepository;
 import com.example.metatry.Services.PostService;
@@ -31,5 +33,39 @@ public class PostController {
         postService.updatePost(id, request);
 
         return ResponseEntity.ok("Post updated");
+    }
+
+    @GetMapping
+    public List<Post> getAllPosts(){
+        return postService.getAllPosts();
+    }
+
+    // Get published posts
+    @GetMapping("/published")
+    public List<Post> getPublishedPosts(){
+        return postService.getPublishedPosts();
+    }
+
+    // Get draft posts
+    @GetMapping("/draft")
+    public List<Post> getDraftPosts(){
+        return postService.getDraftPosts();
+    }
+
+    // Get approved posts
+    @GetMapping("/approved")
+    public List<Post> getApprovedPosts(){
+        return postService.getApprovedPosts();
+    }
+
+    // Get posts by platform
+    @GetMapping("/platform/{platform}")
+    public List<Post> getPostsByPlatform(@PathVariable PlatformType platform){
+        return postService.getPostsByPlatform(platform);
+    }
+
+    @GetMapping("/stats")
+    public PostStatsResponse getStats(){
+        return postService.getStats();
     }
 }
