@@ -1,11 +1,14 @@
 package com.example.metatry.Services;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -13,86 +16,99 @@ public class FacebookTokenService {
 
     private final RestTemplate restTemplate;
 
-    @Value("${facebook.app-id}")
-    private String appId;
-
-    @Value("${facebook.app-secret}")
-    private String appSecret;
-
     @Value("${facebook.page-id}")
     private String pageId;
 
     @Value("${facebook.long-lived-token}")
-    private String longLivedToken; // C'est ton User Token (60 jours)
+    private String longLivedToken;
 
     private String currentPageToken;
-    private long pageTokenExpiryTime;
+
     private boolean tokenValid = false;
 
     public FacebookTokenService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
-        // Au démarrage, on récupère directement le token de page
+    }
+
+    /**
+     * Run once when Spring finishes loading the bean
+     */
+    @PostConstruct
+    public void init() {
         refreshPageToken();
     }
 
     /**
-     * Rafraîchit le token de page toutes les 50 minutes
+     * Refresh token every 50 minutes
      */
-    @Scheduled(fixedRate = 3000000) // 50 minutes
+    @Scheduled(fixedRate = 3000000)
     public void refreshPageToken() {
-        try {
-            System.out.println("🔄 [TokenService] Récupération du token de page...");
 
-            // Utiliser le long-lived token (User Token) pour obtenir le token de page
-            String url = "https://graph.facebook.com/v19.0/me/accounts?access_token=" + longLivedToken;
+        try {
+
+            System.out.println("🔄 [FacebookTokenService] Refreshing page token...");
+
+            String url = UriComponentsBuilder
+                    .fromUriString("https://graph.facebook.com/v19.0/me/accounts")
+                    .queryParam("access_token", longLivedToken.trim())
+                    .toUriString();
 
             ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
 
-            if (response.getBody() != null && response.getBody().containsKey("data")) {
-                var accounts = (java.util.List<Map<String, Object>>) response.getBody().get("data");
-                for (var account : accounts) {
-                    if (pageId.equals(account.get("id"))) {
-                        this.currentPageToken = (String) account.get("access_token");
-                        this.pageTokenExpiryTime = System.currentTimeMillis() + 3300000; // 55 minutes
-                        this.tokenValid = true;
-                        System.out.println("✅ [TokenService] Token de page obtenu avec succès");
-                        return;
-                    }
-                }
-                System.out.println("⚠️ [TokenService] Page non trouvée dans la liste");
+            if (response.getBody() == null) {
+                throw new RuntimeException("Facebook returned empty response");
             }
+
+            List<Map<String, Object>> accounts =
+                    (List<Map<String, Object>>) response.getBody().get("data");
+
+            if (accounts == null || accounts.isEmpty()) {
+                throw new RuntimeException("No pages found for this token");
+            }
+
+            for (Map<String, Object> account : accounts) {
+
+                if (pageId.equals(account.get("id"))) {
+
+                    currentPageToken = (String) account.get("access_token");
+
+                    tokenValid = true;
+
+                    System.out.println("✅ [FacebookTokenService] Page token refreshed successfully");
+
+                    return;
+                }
+            }
+
+            System.out.println("⚠️ [FacebookTokenService] Page not found in account list");
+
+            tokenValid = false;
+
         } catch (Exception e) {
-            this.tokenValid = false;
-            System.err.println("❌ [TokenService] Erreur: " + e.getMessage());
-            e.printStackTrace();
+
+            tokenValid = false;
+
+            System.err.println("❌ [FacebookTokenService] Failed to refresh token: " + e.getMessage());
         }
     }
 
     /**
-     * Retourne le token de page actuel, le rafraîchit si nécessaire
+     * Return valid token for posting
      */
-    public String getCurrentPageToken() {
-        if (currentPageToken == null || System.currentTimeMillis() > pageTokenExpiryTime - 300000) {
+    public String getPageToken() {
+
+        if (!tokenValid || currentPageToken == null) {
             refreshPageToken();
         }
+
         return currentPageToken;
     }
 
     /**
-     * Vérifie si le token est valide
+     * Check token state
      */
     public boolean isTokenValid() {
-        return tokenValid && currentPageToken != null &&
-                System.currentTimeMillis() < pageTokenExpiryTime;
+        return tokenValid;
     }
 
-    /**
-     * Force le rafraîchissement du token
-     */
-    public void forceRefresh() {
-        refreshPageToken();
-    }
-
-    // ⚠️ On supprime la méthode refreshLongLivedToken car on n'en a pas besoin
-    // Le long-lived token (60 jours) on le garde tel quel dans les propriétés
 }

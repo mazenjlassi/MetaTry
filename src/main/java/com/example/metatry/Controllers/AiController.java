@@ -5,6 +5,8 @@ import com.example.metatry.Services.AiContentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/ai")
 @RequiredArgsConstructor
@@ -13,10 +15,9 @@ public class AiController {
     private final AiContentService aiContentService;
 
 
+
     @PostMapping("/generate")
-    public Post generatePost(@RequestParam String topic){
-
-        return aiContentService.generatePost(topic);
-
+    public List<Post> generatePosts(@RequestParam String topic){
+        return aiContentService.generatePosts(topic);
     }
 }

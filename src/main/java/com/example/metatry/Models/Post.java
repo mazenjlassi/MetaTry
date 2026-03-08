@@ -1,8 +1,11 @@
 package com.example.metatry.Models;
 
+import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Enums.PostStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,8 +32,8 @@ public class Post {
 
     private String videoUrl;
 
-    @ElementCollection
-    private List<String> platforms;
+    @Enumerated(EnumType.STRING)
+    private PlatformType platform; // FACEBOOK / INSTAGRAM / LINKEDIN
 
     private Boolean generatedByAI;
 
@@ -40,6 +43,7 @@ public class Post {
     private LocalDateTime scheduledAt;
 
     private LocalDateTime publishedAt;
+
     private Integer likes;
 
     private Integer commentsCount;

@@ -2,12 +2,14 @@ package com.example.metatry.DTOs;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class AiPostRequest {
 
     private String topic;
 
-    private String platform;
+    private List<String> platforms;
 
     private Boolean generateImage;
 

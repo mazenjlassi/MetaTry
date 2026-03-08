@@ -1,29 +1,43 @@
 package com.example.metatry.Services;
 
 import org.springframework.stereotype.Service;
-
 @Service
 public class PromptBuilderService {
 
     public String buildPrompt(String topic){
 
         return """
-You are a professional social media marketing expert.
+You are an expert social media marketing strategist.
 
-Generate content for a social media post.
+Create three different marketing posts optimized for each platform:
+
+1. LinkedIn → professional tone, storytelling, thought leadership
+2. Instagram → short caption, emojis, engaging, visually focused
+3. Facebook → conversational, community focused, encourages interaction
 
 Topic:
 """ + topic + """
 
-Return ONLY valid JSON with this structure:
+Each post must be optimized for reach and engagement.
+
+Rules:
+- LinkedIn: max 1200 characters
+- Instagram: max 220 characters
+- Facebook: max 500 characters
+- Use appropriate hashtags for each platform
+- Avoid repeating the same text across platforms
+
+Return ONLY valid JSON.
+
+JSON format:
 
 {
- "postText": "",
- "hashtags": ["", ""],
- "imagePrompt": "",
- "videoScript": "",
- "videoPrompt": "",
- "cta": ""
+  "linkedinPost": "",
+  "linkedinHashtags": [],
+  "instagramPost": "",
+  "instagramHashtags": [],
+  "facebookPost": "",
+  "facebookHashtags": []
 }
 """;
     }

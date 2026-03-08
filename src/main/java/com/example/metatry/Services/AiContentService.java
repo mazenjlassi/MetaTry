@@ -2,6 +2,7 @@ package com.example.metatry.Services;
 
 import com.example.metatry.Config.GeminiConfig;
 import com.example.metatry.DTOs.AiGeneratedContent;
+import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Enums.PostStatus;
 import com.example.metatry.Models.Post;
 import com.example.metatry.Repositories.PostRepository;
@@ -24,7 +25,7 @@ public class AiContentService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public Post generatePost(String topic){
+    public List<Post> generatePosts(String topic){
 
         try {
 
@@ -67,28 +68,48 @@ public class AiContentService {
 
             String aiText = (String) part.get("text");
 
-            // Clean JSON from ```json ```
             aiText = cleanJson(aiText);
 
             AiGeneratedContent aiContent =
                     objectMapper.readValue(aiText, AiGeneratedContent.class);
 
-            Post post = Post.builder()
-                    .content(aiContent.getPostText())
-                    .hashtags(String.join(",", aiContent.getHashtags()))
+            Post linkedinPost = Post.builder()
+                    .content(aiContent.getLinkedinPost())
+                    .hashtags(String.join(",", aiContent.getLinkedinHashtags()))
+                    .platform(PlatformType.LINKEDIN)
                     .generatedByAI(true)
                     .approved(false)
                     .status(PostStatus.DRAFT)
                     .build();
 
-            return postRepository.save(post);
+            Post instagramPost = Post.builder()
+                    .content(aiContent.getInstagramPost())
+                    .hashtags(String.join(",", aiContent.getInstagramHashtags()))
+                    .platform(PlatformType.INSTAGRAM)
+                    .generatedByAI(true)
+                    .approved(false)
+                    .status(PostStatus.DRAFT)
+                    .build();
+
+            Post facebookPost = Post.builder()
+                    .content(aiContent.getFacebookPost())
+                    .hashtags(String.join(",", aiContent.getFacebookHashtags()))
+                    .platform(PlatformType.FACEBOOK)
+                    .generatedByAI(true)
+                    .approved(false)
+                    .status(PostStatus.DRAFT)
+                    .build();
+
+            return postRepository.saveAll(
+                    List.of(linkedinPost, instagramPost, facebookPost)
+            );
 
         } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error generating AI posts: " + e.getMessage());
 
-            throw new RuntimeException("Error generating AI post", e);
 
         }
-
     }
 
     private String cleanJson(String text){

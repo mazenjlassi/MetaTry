@@ -1,10 +1,13 @@
 package com.example.metatry.Services;
 
 import com.example.metatry.DTOs.UpdatePostRequest;
+import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Models.Post;
 import com.example.metatry.Repositories.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,8 +26,9 @@ public class PostService {
         if(request.getHashtags() != null)
             post.setHashtags(request.getHashtags());
 
-        if(request.getPlatform() != null)
+        if(request.getPlatform() != null){
             post.setPlatform(request.getPlatform());
+        }
 
         if(request.getImageUrl() != null)
             post.setImageUrl(request.getImageUrl());
@@ -35,8 +39,7 @@ public class PostService {
         if(request.getApproved() != null)
             post.setApproved(request.getApproved());
 
-        if(request.getScheduledAt() != null)
-            post.setScheduledAt(request.getScheduledAt());
+
 
         return postRepository.save(post);
     }
