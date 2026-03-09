@@ -2,10 +2,9 @@ package com.example.metatry.Models;
 
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Enums.PostStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -44,6 +43,10 @@ public class Post {
 
     private LocalDateTime publishedAt;
 
+    /*
+     Latest metrics snapshot
+     (updated each time analytics are collected)
+     */
     private Integer likes;
 
     private Integer commentsCount;
@@ -54,8 +57,30 @@ public class Post {
 
     private Double engagementScore;
 
+    /*
+     ID returned by the platform after publishing
+     Needed for analytics and comments
+     */
+    private String platformPostId;
+
     private Boolean approved = false;
 
     @ManyToOne
+    @JoinColumn(name = "campaign_id")
     private Campaign campaign;
+
+    /*
+     Metrics history (analytics snapshots)
+     */
+    @JsonIgnore
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<PostMetric> metrics;
+
+    /*
+     Comments fetched from platforms
+     */
+    @JsonIgnore
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<PostComment> comments;
+
 }
