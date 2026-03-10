@@ -9,6 +9,7 @@ import com.example.metatry.Repositories.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -44,6 +45,9 @@ public class PostService {
 
         if(request.getApproved() != null)
             post.setApproved(request.getApproved());
+
+        if(request.getScheduledAt() != null)
+            post.setScheduledAt(request.getScheduledAt());
 
 
 
@@ -91,5 +95,15 @@ public class PostService {
                 instagram,
                 linkedin
         );
+
+    }
+
+    public List<Post> getScheduledPosts(){
+
+        return postRepository
+                .findByApprovedTrueAndStatusAndScheduledAtBefore(
+                        PostStatus.DRAFT,
+                        LocalDateTime.now()
+                );
     }
 }
