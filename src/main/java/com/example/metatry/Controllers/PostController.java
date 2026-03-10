@@ -68,4 +68,9 @@ public class PostController {
     public PostStatsResponse getStats(){
         return postService.getStats();
     }
+
+    @GetMapping("/scheduled")
+    public List<Post> getScheduledPosts() {
+        return postService.getScheduledPosts();
+    }
 }
