@@ -14,4 +14,7 @@ public class AiGeneratedContent {
     private String facebookPost;
     private List<String> facebookHashtags;
 
+    private String imagePrompt;
+    private String videoPrompt;
+
 }

@@ -36,6 +36,9 @@ public class Post {
 
     private Boolean generatedByAI;
 
+    @Column(length = 2000)
+    private String imagePrompt;
+
     @Enumerated(EnumType.STRING)
     private PostStatus status;
 

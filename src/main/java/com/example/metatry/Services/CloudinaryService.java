@@ -48,4 +48,13 @@ public class CloudinaryService {
             convFile.delete();
         }
     }
+    public String uploadImageBytes(byte[] imageBytes) throws Exception {
+
+        Map uploadResult = cloudinary.uploader().upload(
+                imageBytes,
+                Map.of("resource_type", "image")
+        );
+
+        return (String) uploadResult.get("secure_url");
+    }
 }
