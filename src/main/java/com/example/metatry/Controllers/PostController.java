@@ -5,6 +5,7 @@ import com.example.metatry.DTOs.UpdatePostRequest;
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Models.Post;
 import com.example.metatry.Repositories.PostRepository;
+import com.example.metatry.Services.AiImageService;
 import com.example.metatry.Services.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ public class PostController {
 
     private final PostRepository postRepository;
     private final PostService postService;
+    private final AiImageService aiImageService;
 
     @GetMapping("/pending")
     public List<Post> pendingPosts(){
@@ -72,5 +74,18 @@ public class PostController {
     @GetMapping("/scheduled")
     public List<Post> getScheduledPosts() {
         return postService.getScheduledPosts();
+    }
+
+    @PostMapping("/{id}/generate-image")
+    public Post generateImage(@PathVariable Long id) {
+
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        String imageUrl = aiImageService.generateAndUploadImage(post.getImagePrompt());
+
+        post.setImageUrl(imageUrl);
+
+        return postRepository.save(post);
     }
 }

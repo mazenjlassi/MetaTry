@@ -32,13 +32,13 @@ Return ONLY valid JSON.
 JSON format:
 
 {
-  "linkedinPost": "",
-  "linkedinHashtags": [],
-  "instagramPost": "",
-  "instagramHashtags": [],
-  "facebookPost": "",
-  "facebookHashtags": []
-}
+ "linkedinPost": "...",
+ "linkedinHashtags": ["AI","Automation"],
+ "instagramPost": "...",
+ "instagramHashtags": ["AI","Startup"],
+ "facebookPost": "...",
+ "facebookHashtags": ["AI","Business"],
+ "imagePrompt": ""
 """;
     }
 }

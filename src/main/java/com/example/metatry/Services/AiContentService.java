@@ -22,6 +22,7 @@ public class AiContentService {
     private final GeminiConfig geminiConfig;
     private final PromptBuilderService promptBuilderService;
     private final PostRepository postRepository;
+    private final AiImageService aiImageService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -76,6 +77,7 @@ public class AiContentService {
             Post linkedinPost = Post.builder()
                     .content(aiContent.getLinkedinPost())
                     .hashtags(String.join(",", aiContent.getLinkedinHashtags()))
+                    .imagePrompt(aiContent.getImagePrompt())
                     .platform(PlatformType.LINKEDIN)
                     .generatedByAI(true)
                     .approved(false)
@@ -85,6 +87,7 @@ public class AiContentService {
             Post instagramPost = Post.builder()
                     .content(aiContent.getInstagramPost())
                     .hashtags(String.join(",", aiContent.getInstagramHashtags()))
+                    .imagePrompt(aiContent.getImagePrompt())
                     .platform(PlatformType.INSTAGRAM)
                     .generatedByAI(true)
                     .approved(false)
@@ -94,6 +97,7 @@ public class AiContentService {
             Post facebookPost = Post.builder()
                     .content(aiContent.getFacebookPost())
                     .hashtags(String.join(",", aiContent.getFacebookHashtags()))
+                    .imagePrompt(aiContent.getImagePrompt())
                     .platform(PlatformType.FACEBOOK)
                     .generatedByAI(true)
                     .approved(false)
