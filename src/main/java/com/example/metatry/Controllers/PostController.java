@@ -4,11 +4,13 @@ import com.example.metatry.DTOs.PostStatsResponse;
 import com.example.metatry.DTOs.UpdatePostRequest;
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Models.Post;
+import com.example.metatry.Models.PostImage;
 import com.example.metatry.Repositories.PostRepository;
 import com.example.metatry.Services.AiImageService;
 import com.example.metatry.Services.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,11 +24,13 @@ public class PostController {
     private final PostService postService;
     private final AiImageService aiImageService;
 
+    // Pending posts (not approved)
     @GetMapping("/pending")
     public List<Post> pendingPosts(){
         return postRepository.findByApprovedFalse();
     }
 
+    // Update post
     @PutMapping("/{id}")
     public ResponseEntity<String> updatePost(
             @PathVariable Long id,
@@ -37,6 +41,7 @@ public class PostController {
         return ResponseEntity.ok("Post updated");
     }
 
+    // Get all posts
     @GetMapping
     public List<Post> getAllPosts(){
         return postService.getAllPosts();
@@ -66,26 +71,39 @@ public class PostController {
         return postService.getPostsByPlatform(platform);
     }
 
+    // Statistics
     @GetMapping("/stats")
     public PostStatsResponse getStats(){
         return postService.getStats();
     }
 
+    // Posts ready for scheduler
     @GetMapping("/scheduled")
     public List<Post> getScheduledPosts() {
         return postService.getScheduledPosts();
     }
 
+    /**
+     * Generate AI image from imagePrompt
+     */
     @PostMapping("/{id}/generate-image")
-    public Post generateImage(@PathVariable Long id) {
+    @PreAuthorize("isAuthenticated()")
+    public List<PostImage> generateImages(@PathVariable Long id){
 
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
-        String imageUrl = aiImageService.generateAndUploadImage(post.getImagePrompt());
+        List<PostImage> images = aiImageService.generateImagesForPost(post);
 
-        post.setImageUrl(imageUrl);
+        for(PostImage img : images){
+            img.setPost(post);
+        }
 
-        return postRepository.save(post);
+        post.getImages().addAll(images);
+
+        postRepository.save(post);
+
+        return images;
     }
+
 }

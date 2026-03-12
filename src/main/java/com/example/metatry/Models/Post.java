@@ -7,8 +7,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-
 @Entity
 @Getter
 @Setter
@@ -27,17 +27,12 @@ public class Post {
     @Column(length = 1000)
     private String hashtags;
 
-    private String imageUrl;
-
     private String videoUrl;
 
     @Enumerated(EnumType.STRING)
-    private PlatformType platform; // FACEBOOK / INSTAGRAM / LINKEDIN
+    private PlatformType platform;
 
     private Boolean generatedByAI;
-
-    @Column(length = 2000)
-    private String imagePrompt;
 
     @Enumerated(EnumType.STRING)
     private PostStatus status;
@@ -48,8 +43,7 @@ public class Post {
 
     /*
      Latest metrics snapshot
-     (updated each time analytics are collected)
-     */
+    */
     private Integer likes;
 
     private Integer commentsCount;
@@ -61,9 +55,8 @@ public class Post {
     private Double engagementScore;
 
     /*
-     ID returned by the platform after publishing
-     Needed for analytics and comments
-     */
+     Platform ID after publishing
+    */
     private String platformPostId;
 
     private Boolean approved = false;
@@ -73,17 +66,23 @@ public class Post {
     private Campaign campaign;
 
     /*
-     Metrics history (analytics snapshots)
-     */
+     Metrics history
+    */
     @JsonIgnore
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PostMetric> metrics;
 
     /*
-     Comments fetched from platforms
-     */
+     Comments fetched from APIs
+    */
     @JsonIgnore
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PostComment> comments;
 
+    /*
+     Images for this post
+    */
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<PostImage> images = new ArrayList<>();
 }

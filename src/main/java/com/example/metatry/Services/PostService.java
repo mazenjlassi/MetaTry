@@ -33,12 +33,8 @@ public class PostService {
         if(request.getHashtags() != null)
             post.setHashtags(request.getHashtags());
 
-        if(request.getPlatform() != null){
+        if(request.getPlatform() != null)
             post.setPlatform(request.getPlatform());
-        }
-
-        if(request.getImageUrl() != null)
-            post.setImageUrl(request.getImageUrl());
 
         if(request.getVideoUrl() != null)
             post.setVideoUrl(request.getVideoUrl());
@@ -48,8 +44,6 @@ public class PostService {
 
         if(request.getScheduledAt() != null)
             post.setScheduledAt(request.getScheduledAt());
-
-
 
         return postRepository.save(post);
     }
@@ -73,17 +67,12 @@ public class PostService {
     public PostStatsResponse getStats(){
 
         long total = postRepository.count();
-
         long published = postRepository.countByStatus(PostStatus.PUBLISHED);
-
         long draft = postRepository.countByStatus(PostStatus.DRAFT);
-
         long approved = postRepository.countByApprovedTrue();
 
         long facebook = postRepository.countByPlatform(PlatformType.FACEBOOK);
-
         long instagram = postRepository.countByPlatform(PlatformType.INSTAGRAM);
-
         long linkedin = postRepository.countByPlatform(PlatformType.LINKEDIN);
 
         return new PostStatsResponse(
@@ -95,7 +84,6 @@ public class PostService {
                 instagram,
                 linkedin
         );
-
     }
 
     public List<Post> getScheduledPosts(){
