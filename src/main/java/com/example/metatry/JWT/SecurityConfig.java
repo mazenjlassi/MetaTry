@@ -35,6 +35,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/api/facebook/public-test").permitAll()
                         .requestMatchers("/api/linkedin/callback").permitAll()
+                        .requestMatchers("/error").permitAll()
 
                         // ✅ PROTÉGÉ - nécessite authentification
                         .requestMatchers("/api/facebook/post").authenticated()
@@ -42,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/instagram/**").authenticated()
                         .requestMatchers("/api/linkedin/**").authenticated()
                         .requestMatchers("/publish/**").authenticated()
+                        .requestMatchers("/posts/**").authenticated()
 
 
                         // ✅ TOUT LE RESTE

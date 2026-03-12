@@ -1,39 +1,44 @@
 package com.example.metatry.Services;
 
-import com.example.metatry.Enums.PlatformType;
+import com.example.metatry.Enums.ImageSize;
 import com.example.metatry.Enums.PostStatus;
 import com.example.metatry.Models.Post;
+import com.example.metatry.Models.PostImage;
 import com.example.metatry.Repositories.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class SocialPublisherService {
 
-    private final FacebookService facebookService;
     private final InstagramService instagramService;
+    private final FacebookService facebookService;
     private final LinkedInService linkedInService;
+
     private final PostRepository postRepository;
 
-    public Post publishPost(Post post) {
+    public Post publishPost(Post post){
 
-        if(!post.getApproved()){
+        if(!Boolean.TRUE.equals(post.getApproved())){
             throw new RuntimeException("Post must be approved before publishing");
         }
 
-        PlatformType platform = post.getPlatform();
+        String caption = buildCaption(post);
 
-        switch (platform){
+        PostImage image = selectBestImage(post);
 
-            case FACEBOOK -> publishFacebook(post);
+        switch (post.getPlatform()) {
 
-            case INSTAGRAM -> publishInstagram(post);
+            case INSTAGRAM -> publishInstagram(post, image, caption);
 
-            case LINKEDIN -> publishLinkedin(post);
+            case FACEBOOK -> publishFacebook(post, image, caption);
+
+            case LINKEDIN -> publishLinkedIn(post, image, caption);
         }
 
         post.setStatus(PostStatus.PUBLISHED);
@@ -42,35 +47,104 @@ public class SocialPublisherService {
         return postRepository.save(post);
     }
 
-    private void publishFacebook(Post post){
-
-        Map<String,Object> result =
-                facebookService.postText(post.getContent());
-
-        System.out.println("Facebook publish result: " + result);
+    private String buildCaption(Post post){
+        return post.getContent() + "\n\n" + post.getHashtags();
     }
 
-    private void publishInstagram(Post post){
+    /**
+     * Automatically select the best image for the platform
+     */
+    private PostImage selectBestImage(Post post){
 
-        if(post.getImageUrl() == null){
-            throw new RuntimeException("Instagram requires an imageUrl");
+        if(post.getImages() == null || post.getImages().isEmpty()){
+            return null;
         }
 
-        Map<String,Object> result =
+        ImageSize preferredSize = switch(post.getPlatform()) {
+            case INSTAGRAM -> ImageSize.SQUARE;
+            case LINKEDIN, FACEBOOK -> ImageSize.LANDSCAPE;
+        };
+
+        Optional<PostImage> selected = post.getImages()
+                .stream()
+                .filter(PostImage::getSelected)
+                .findFirst();
+
+        if(selected.isPresent()){
+            return selected.get();
+        }
+
+        return post.getImages()
+                .stream()
+                .filter(i -> i.getSize() == preferredSize)
+                .findFirst()
+                .orElse(post.getImages().get(0));
+    }
+
+    /**
+     * Instagram publishing (image required)
+     */
+    private void publishInstagram(Post post, PostImage image, String caption){
+
+        if(image == null || image.getImageUrl() == null){
+            throw new RuntimeException("Instagram requires an image to publish");
+        }
+
+        Map<String,Object> response =
                 instagramService.postPhotoFromUrl(
-                        post.getImageUrl(),
-                        post.getContent()
+                        image.getImageUrl(),
+                        caption
                 );
 
-        System.out.println("Instagram publish result: " + result);
+        if(Boolean.TRUE.equals(response.get("success"))){
+            post.setPlatformPostId((String) response.get("mediaId"));
+        }
     }
 
-    private void publishLinkedin(Post post){
+    /**
+     * Facebook publishing
+     */
+    private void publishFacebook(Post post, PostImage image, String caption){
 
-        Map<String,Object> result =
-                linkedInService.postText(post.getContent());
+        Map<String,Object> response;
 
-        System.out.println("LinkedIn publish result: " + result);
+        if(image != null && image.getImageUrl() != null){
+            response = facebookService.postPhotoFromUrl(
+                    image.getImageUrl(),
+                    caption
+            );
+        } else {
+            response = facebookService.postText(caption);
+        }
+
+        if(Boolean.TRUE.equals(response.get("success"))){
+            post.setPlatformPostId((String) response.get("postId"));
+        }
     }
 
+    /**
+     * LinkedIn publishing
+     */
+    private void publishLinkedIn(Post post, PostImage image, String caption){
+
+        Map<String,Object> response;
+
+        if(image != null && image.getImageUrl() != null){
+
+            response = linkedInService.postArticleWithImage(
+                    caption,
+                    image.getImageUrl(),
+                    "AI Generated Post"
+            );
+
+        } else {
+
+            response = linkedInService.postText(caption);
+
+        }
+
+        if(Boolean.TRUE.equals(response.get("success"))){
+            post.setPlatformPostId((String) response.get("postId"));
+        }
+    }
 }

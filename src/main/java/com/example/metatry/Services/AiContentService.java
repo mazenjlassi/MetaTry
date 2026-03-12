@@ -2,9 +2,12 @@ package com.example.metatry.Services;
 
 import com.example.metatry.Config.GeminiConfig;
 import com.example.metatry.DTOs.AiGeneratedContent;
+import com.example.metatry.Enums.ImageSize;
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Enums.PostStatus;
 import com.example.metatry.Models.Post;
+import com.example.metatry.Models.PostImage;
+import com.example.metatry.Repositories.PostImageRepository;
 import com.example.metatry.Repositories.PostRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +24,9 @@ public class AiContentService {
 
     private final GeminiConfig geminiConfig;
     private final PromptBuilderService promptBuilderService;
+
     private final PostRepository postRepository;
-    private final AiImageService aiImageService;
+    private final PostImageRepository postImageRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -74,46 +78,68 @@ public class AiContentService {
             AiGeneratedContent aiContent =
                     objectMapper.readValue(aiText, AiGeneratedContent.class);
 
-            Post linkedinPost = Post.builder()
-                    .content(aiContent.getLinkedinPost())
-                    .hashtags(String.join(",", aiContent.getLinkedinHashtags()))
-                    .imagePrompt(aiContent.getImagePrompt())
-                    .platform(PlatformType.LINKEDIN)
-                    .generatedByAI(true)
-                    .approved(false)
-                    .status(PostStatus.DRAFT)
-                    .build();
+            // Create posts
+            Post linkedinPost = createPost(
+                    aiContent.getLinkedinPost(),
+                    aiContent.getLinkedinHashtags(),
+                    PlatformType.LINKEDIN
+            );
 
-            Post instagramPost = Post.builder()
-                    .content(aiContent.getInstagramPost())
-                    .hashtags(String.join(",", aiContent.getInstagramHashtags()))
-                    .imagePrompt(aiContent.getImagePrompt())
-                    .platform(PlatformType.INSTAGRAM)
-                    .generatedByAI(true)
-                    .approved(false)
-                    .status(PostStatus.DRAFT)
-                    .build();
+            Post instagramPost = createPost(
+                    aiContent.getInstagramPost(),
+                    aiContent.getInstagramHashtags(),
+                    PlatformType.INSTAGRAM
+            );
 
-            Post facebookPost = Post.builder()
-                    .content(aiContent.getFacebookPost())
-                    .hashtags(String.join(",", aiContent.getFacebookHashtags()))
-                    .imagePrompt(aiContent.getImagePrompt())
-                    .platform(PlatformType.FACEBOOK)
-                    .generatedByAI(true)
-                    .approved(false)
-                    .status(PostStatus.DRAFT)
-                    .build();
+            Post facebookPost = createPost(
+                    aiContent.getFacebookPost(),
+                    aiContent.getFacebookHashtags(),
+                    PlatformType.FACEBOOK
+            );
 
-            return postRepository.saveAll(
+            List<Post> savedPosts = postRepository.saveAll(
                     List.of(linkedinPost, instagramPost, facebookPost)
             );
 
+            // Create image prompts for each post
+            for(Post post : savedPosts){
+
+                ImageSize size = switch(post.getPlatform()){
+                    case INSTAGRAM -> ImageSize.SQUARE;
+                    case LINKEDIN, FACEBOOK -> ImageSize.LANDSCAPE;
+                };
+
+                PostImage image = PostImage.builder()
+                        .imagePrompt(aiContent.getImagePrompt())
+                        .size(size)
+                        .post(post)
+                        .selected(false)
+                        .build();
+
+                postImageRepository.save(image);
+            }
+
+            return savedPosts;
+
         } catch (Exception e) {
+
             e.printStackTrace();
+
             throw new RuntimeException("Error generating AI posts: " + e.getMessage());
 
-
         }
+    }
+
+    private Post createPost(String content, List<String> hashtags, PlatformType platform){
+
+        return Post.builder()
+                .content(content)
+                .hashtags(String.join(",", hashtags))
+                .platform(platform)
+                .generatedByAI(true)
+                .approved(false)
+                .status(PostStatus.DRAFT)
+                .build();
     }
 
     private String cleanJson(String text){
