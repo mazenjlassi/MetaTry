@@ -5,6 +5,7 @@ import com.example.metatry.DTOs.UpdatePostRequest;
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Models.Post;
 import com.example.metatry.Models.PostImage;
+import com.example.metatry.Repositories.PostImageRepository;
 import com.example.metatry.Repositories.PostRepository;
 import com.example.metatry.Services.AiImageService;
 import com.example.metatry.Services.PostService;
@@ -23,6 +24,7 @@ public class PostController {
     private final PostRepository postRepository;
     private final PostService postService;
     private final AiImageService aiImageService;
+    private final PostImageRepository postImageRepository;
 
     // Pending posts (not approved)
     @GetMapping("/pending")
@@ -104,6 +106,25 @@ public class PostController {
         postRepository.save(post);
 
         return images;
+    }
+
+    @PutMapping("/images/{imageId}/select")
+    public PostImage selectImage(@PathVariable Long imageId){
+
+        PostImage image = postImageRepository.findById(imageId)
+                .orElseThrow(() -> new RuntimeException("Image not found"));
+
+        Post post = postRepository.findById(image.getPost().getId())
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        // unselect all images
+        post.getImages().forEach(img -> img.setSelected(false));
+
+        image.setSelected(true);
+
+        postRepository.save(post);
+
+        return image;
     }
 
 }

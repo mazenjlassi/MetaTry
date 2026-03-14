@@ -1,6 +1,7 @@
 package com.example.metatry.Models;
 
 import com.example.metatry.Enums.ImageSize;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 @Entity
@@ -27,5 +28,6 @@ public class PostImage {
 
     @ManyToOne
     @JoinColumn(name = "post_id")
+    @JsonBackReference
     private Post post;
 }

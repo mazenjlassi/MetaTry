@@ -3,6 +3,7 @@ package com.example.metatry.Models;
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Enums.PostStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -84,5 +85,6 @@ public class Post {
     */
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
     @Builder.Default
+    @JsonManagedReference
     private List<PostImage> images = new ArrayList<>();
 }
