@@ -2,6 +2,7 @@ package com.example.metatry.Controllers;
 
 import com.example.metatry.DTOs.PostStatsResponse;
 import com.example.metatry.DTOs.UpdatePostRequest;
+import com.example.metatry.Enums.ImageSize;
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Models.Post;
 import com.example.metatry.Models.PostImage;
@@ -55,6 +56,17 @@ public class PostController {
         return postService.getPublishedPosts();
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<String> deletePost(@PathVariable Long id){
+
+        postService.deletePost(id);
+
+        return ResponseEntity.ok("Post deleted successfully");
+    }
+
+
+
     // Get draft posts
     @GetMapping("/draft")
     public List<Post> getDraftPosts(){
@@ -88,43 +100,37 @@ public class PostController {
     /**
      * Generate AI image from imagePrompt
      */
+
     @PostMapping("/{id}/generate-image")
     @PreAuthorize("isAuthenticated()")
-    public List<PostImage> generateImages(@PathVariable Long id){
+    public ResponseEntity<PostImage> generateImage(@PathVariable Long id){
 
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
-        List<PostImage> images = aiImageService.generateImagesForPost(post);
+        PostImage image = aiImageService.generateImageForPost(post);
 
-        for(PostImage img : images){
-            img.setPost(post);
-        }
-
-        post.getImages().addAll(images);
+        image.setPost(post);
+        post.setImage(image);
 
         postRepository.save(post);
 
-        return images;
+        return ResponseEntity.ok(image);
     }
 
-    @PutMapping("/images/{imageId}/select")
-    public PostImage selectImage(@PathVariable Long imageId){
 
-        PostImage image = postImageRepository.findById(imageId)
-                .orElseThrow(() -> new RuntimeException("Image not found"));
 
-        Post post = postRepository.findById(image.getPost().getId())
-                .orElseThrow(() -> new RuntimeException("Post not found"));
 
-        // unselect all images
-        post.getImages().forEach(img -> img.setSelected(false));
 
-        image.setSelected(true);
+    @DeleteMapping("/cleanup-images")
+    public ResponseEntity<String> cleanDuplicateImages(){
 
-        postRepository.save(post);
+        postService.cleanDuplicateImages();
 
-        return image;
+        return ResponseEntity.ok("Duplicate images removed");
     }
+
+
+
 
 }

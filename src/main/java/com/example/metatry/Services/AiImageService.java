@@ -1,6 +1,6 @@
 package com.example.metatry.Services;
 
-import com.example.metatry.Config.StabilityConfig;
+import com.example.metatry.Config.CloudflareConfig;
 import com.example.metatry.Enums.ImageSize;
 import com.example.metatry.Models.Post;
 import com.example.metatry.Models.PostImage;
@@ -8,43 +8,35 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class AiImageService {
 
     private final CloudinaryService cloudinaryService;
-    private final StabilityConfig stabilityConfig;
+    private final CloudflareConfig cloudflareConfig;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    /**
-     * Generate AI image and upload to Cloudinary
-     */
     public String generateAndUploadImage(String prompt) {
 
         try {
 
-            String url = "https://api.stability.ai/v2beta/stable-image/generate/sd3";
+            String url =
+                    "https://api.cloudflare.com/client/v4/accounts/"
+                            + cloudflareConfig.getAccountId()
+                            + "/ai/run/@cf/stabilityai/stable-diffusion-xl-base-1.0";
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            headers.setBearerAuth(stabilityConfig.getApiKey());
-            headers.set("Accept", "image/*");
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(cloudflareConfig.getApiToken());
 
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("prompt", prompt);
-            body.add("output_format", "png");
+            Map<String, Object> body = new HashMap<>();
+            body.put("prompt", prompt);
 
-            HttpEntity<MultiValueMap<String, Object>> request =
+            HttpEntity<Map<String, Object>> request =
                     new HttpEntity<>(body, headers);
 
             ResponseEntity<byte[]> response =
@@ -64,23 +56,23 @@ public class AiImageService {
         }
     }
 
-    /**
-     * Generate 3 AI images for a post
-     */
-    public List<PostImage> generateImagesForPost(Post post){
+    public PostImage generateImageForPost(Post post){
 
-        List<PostImage> images = new ArrayList<>();
+        ImageSize size = ImageSize.SQUARE; // choose default format
 
-        images.add(createImage(post, ImageSize.SQUARE));
-        images.add(createImage(post, ImageSize.LANDSCAPE));
-        images.add(createImage(post, ImageSize.PORTRAIT));
+        String prompt = buildPrompt(post, size);
 
-        return images;
+        String imageUrl = generateAndUploadImage(prompt);
+
+        return PostImage.builder()
+                .imageUrl(imageUrl)
+                .imagePrompt(prompt)
+                .size(size)
+                .post(post)
+                .selected(true)
+                .build();
     }
 
-    /**
-     * Create one image with a specific format
-     */
     private PostImage createImage(Post post, ImageSize size){
 
         String prompt = buildPrompt(post, size);
@@ -96,9 +88,6 @@ public class AiImageService {
                 .build();
     }
 
-    /**
-     * Build optimized prompt depending on image size
-     */
     private String buildPrompt(Post post, ImageSize size){
 
         String ratio = switch (size){
@@ -110,7 +99,7 @@ public class AiImageService {
             case PORTRAIT -> "vertical mobile composition";
         };
 
-        return "futuristic AI business technology illustration, "
+        return "futuristic AI business technology illustration,generate it as a marketing team , it should be realistic "
                 + ratio
                 + ", modern digital art, vibrant colors, marketing style";
     }
