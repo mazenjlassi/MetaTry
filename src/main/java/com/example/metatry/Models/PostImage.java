@@ -24,10 +24,11 @@ public class PostImage {
     @Enumerated(EnumType.STRING)
     private ImageSize size;
 
-    private Boolean selected = false;
+    private Boolean selected = true;
 
-    @ManyToOne
-    @JoinColumn(name = "post_id")
+    @OneToOne
+    @JoinColumn(name = "post_id", unique = true)
     @JsonBackReference
     private Post post;
+
 }

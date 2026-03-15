@@ -81,10 +81,12 @@ public class Post {
     private List<PostComment> comments;
 
     /*
-     Images for this post
-    */
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
-    @Builder.Default
+ Image for this post
+*/
+    @OneToOne(mappedBy = "post", cascade = CascadeType.ALL)
     @JsonManagedReference
-    private List<PostImage> images = new ArrayList<>();
+    private PostImage image;
+
+
+
 }

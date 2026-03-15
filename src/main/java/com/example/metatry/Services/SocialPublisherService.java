@@ -56,7 +56,9 @@ public class SocialPublisherService {
      */
     private PostImage selectBestImage(Post post){
 
-        if(post.getImages() == null || post.getImages().isEmpty()){
+        PostImage image = post.getImage();
+
+        if(image == null){
             return null;
         }
 
@@ -65,20 +67,8 @@ public class SocialPublisherService {
             case LINKEDIN, FACEBOOK -> ImageSize.LANDSCAPE;
         };
 
-        Optional<PostImage> selected = post.getImages()
-                .stream()
-                .filter(PostImage::getSelected)
-                .findFirst();
 
-        if(selected.isPresent()){
-            return selected.get();
-        }
-
-        return post.getImages()
-                .stream()
-                .filter(i -> i.getSize() == preferredSize)
-                .findFirst()
-                .orElse(post.getImages().get(0));
+        return image;
     }
 
     /**

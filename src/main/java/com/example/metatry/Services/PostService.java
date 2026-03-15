@@ -5,18 +5,23 @@ import com.example.metatry.DTOs.UpdatePostRequest;
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Enums.PostStatus;
 import com.example.metatry.Models.Post;
+import com.example.metatry.Models.PostImage;
+import com.example.metatry.Repositories.PostImageRepository;
 import com.example.metatry.Repositories.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class PostService {
 
     private final PostRepository postRepository;
+    private final PostImageRepository postImageRepository;
 
     public List<Post> getAllPosts(){
         return postRepository.findAll();
@@ -47,6 +52,15 @@ public class PostService {
 
         return postRepository.save(post);
     }
+    public void deletePost(Long id){
+
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        postRepository.delete(post);
+    }
+
+
 
     public List<Post> getPublishedPosts(){
         return postRepository.findByStatus(PostStatus.PUBLISHED);
@@ -94,4 +108,27 @@ public class PostService {
                         LocalDateTime.now()
                 );
     }
+
+
+
+
+
+    public void cleanDuplicateImages() {
+
+        List<PostImage> allImages = postImageRepository.findAll();
+
+        Map<Long, PostImage> uniqueImages = new HashMap<>();
+
+        for (PostImage image : allImages) {
+
+            Long postId = image.getPost().getId();
+
+            if (!uniqueImages.containsKey(postId)) {
+                uniqueImages.put(postId, image);
+            } else {
+                postImageRepository.delete(image);
+            }
+        }
+    }
+
 }
