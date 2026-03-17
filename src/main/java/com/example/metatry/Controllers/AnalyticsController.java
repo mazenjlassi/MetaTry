@@ -1,8 +1,9 @@
 package com.example.metatry.Controllers;
 
-import com.example.metatry.DTOs.AnalyticsRequest;
 import com.example.metatry.Services.AnalyticsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -12,11 +13,15 @@ public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
 
-    @PostMapping("/update")
-    public String updateAnalytics(@RequestBody AnalyticsRequest request){
+    /**
+     * 🔄 Trigger metrics collection (used by n8n)
+     */
+    @PostMapping("/collect")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<String> collectMetrics(){
 
-        analyticsService.updateMetrics(request);
+        analyticsService.collectMetricsForPublishedPosts();
 
-        return "Analytics updated successfully";
+        return ResponseEntity.ok("Metrics collected successfully");
     }
 }

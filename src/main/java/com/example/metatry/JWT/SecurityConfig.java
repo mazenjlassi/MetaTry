@@ -44,6 +44,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/linkedin/**").authenticated()
                         .requestMatchers("/publish/**").authenticated()
                         .requestMatchers("/posts/**").authenticated()
+                        .requestMatchers("/analytics/**").authenticated()
 
 
                         // ✅ TOUT LE RESTE
