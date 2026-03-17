@@ -110,11 +110,6 @@ public class PostController {
 
         PostImage image = aiImageService.generateImageForPost(post);
 
-        image.setPost(post);
-        post.setImage(image);
-
-        postRepository.save(post);
-
         return ResponseEntity.ok(image);
     }
 
