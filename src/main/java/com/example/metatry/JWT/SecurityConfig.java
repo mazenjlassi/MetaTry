@@ -1,6 +1,5 @@
 package com.example.metatry.JWT;
 
-import com.example.metatry.JWT.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -14,6 +13,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import org.springframework.web.cors.*;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -29,16 +33,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // 🔥 ENABLE CORS HERE
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
                 .csrf(csrf -> csrf.disable())
+
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ PUBLIC - accessible sans token
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // ✅ PUBLIC
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/api/facebook/public-test").permitAll()
                         .requestMatchers("/api/linkedin/callback").permitAll()
                         .requestMatchers("/error").permitAll()
 
-                        // ✅ PROTÉGÉ - nécessite authentification
-                        .requestMatchers("/api/facebook/post").authenticated()
+                        // ✅ PROTECTED
                         .requestMatchers("/api/facebook/**").authenticated()
                         .requestMatchers("/api/instagram/**").authenticated()
                         .requestMatchers("/api/linkedin/**").authenticated()
@@ -46,14 +54,32 @@ public class SecurityConfig {
                         .requestMatchers("/posts/**").authenticated()
                         .requestMatchers("/analytics/**").authenticated()
 
-
-                        // ✅ TOUT LE RESTE
                         .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    // 🔥 CORS CONFIGURATION (THIS FIXES YOUR ISSUE)
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
     }
 
     @Bean

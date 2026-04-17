@@ -64,23 +64,40 @@ public class AnalyticsService {
 
         String token = tokenService.getPageToken();
 
-        String url = "https://graph.facebook.com/v19.0/" + post.getPlatformPostId() +
+        String postId = post.getPlatformPostId();
+
+        // 🔥 Fix: build FULL Facebook ID if missing pageId
+        if(postId != null && !postId.contains("_")){
+            String pageId = "968174046384507";
+            postId = pageId + "_" + postId;
+        }
+
+        String url = "https://graph.facebook.com/v19.0/" + postId +
                 "?fields=likes.summary(true),comments.summary(true),shares" +
                 "&access_token=" + token;
 
-        System.out.println("➡️ Facebook API call: " + post.getPlatformPostId());
+        System.out.println("➡️ Facebook API call: " + postId);
 
-        Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+        try {
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
 
-        if(response == null) return;
+            if(response == null){
+                System.out.println("❌ FB response is null");
+                return;
+            }
 
-        System.out.println("✅ FB Response: " + response);
+            System.out.println("✅ FB Response: " + response);
 
-        int likes = extractLikes(response);
-        int comments = extractComments(response);
-        int shares = extractShares(response);
+            int likes = extractLikes(response);
+            int comments = extractComments(response);
+            int shares = extractShares(response);
 
-        saveAndUpdate(post, likes, comments, shares, 0);
+            saveAndUpdate(post, likes, comments, shares, 0);
+
+        } catch (Exception e){
+            System.out.println("❌ Facebook fetch failed for post: " + postId);
+            e.printStackTrace();
+        }
     }
 
     /**
