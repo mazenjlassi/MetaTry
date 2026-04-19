@@ -32,4 +32,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     Page<Post> findByStatus(PostStatus status, Pageable pageable);
 
+    List<Post> findByPermanentTrue();
+
 }

@@ -27,10 +27,15 @@ public class PostService {
         return postRepository.findAll();
     }
 
+    // ================= UPDATE POST =================
+
     public Post updatePost(Long id, UpdatePostRequest request){
 
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        if(request.getTitle() != null)
+            post.setTitle(request.getTitle());
 
         if(request.getContent() != null)
             post.setContent(request.getContent());
@@ -50,8 +55,17 @@ public class PostService {
         if(request.getScheduledAt() != null)
             post.setScheduledAt(request.getScheduledAt());
 
+        if(request.getPermanent() != null)
+            post.setPermanent(request.getPermanent());
+
+        if(request.getLink() != null)
+            post.setLink(request.getLink());
+
         return postRepository.save(post);
     }
+
+    // ================= DELETE =================
+
     public void deletePost(Long id){
 
         Post post = postRepository.findById(id)
@@ -60,7 +74,7 @@ public class PostService {
         postRepository.delete(post);
     }
 
-
+    // ================= BASIC GET =================
 
     public List<Post> getPublishedPosts(){
         return postRepository.findByStatus(PostStatus.PUBLISHED);
@@ -77,6 +91,13 @@ public class PostService {
     public List<Post> getPostsByPlatform(PlatformType platform){
         return postRepository.findByPlatform(platform);
     }
+
+    // 🔥 NEW: Permanent posts
+    public List<Post> getPermanentPosts(){
+        return postRepository.findByPermanentTrue();
+    }
+
+    // ================= STATS =================
 
     public PostStatsResponse getStats(){
 
@@ -100,6 +121,8 @@ public class PostService {
         );
     }
 
+    // ================= SCHEDULER =================
+
     public List<Post> getScheduledPosts(){
 
         return postRepository
@@ -109,9 +132,7 @@ public class PostService {
                 );
     }
 
-
-
-
+    // ================= CLEAN IMAGES =================
 
     public void cleanDuplicateImages() {
 
@@ -131,10 +152,8 @@ public class PostService {
         }
     }
 
-
     // ================= DASHBOARD =================
 
-    // Latest posts (sorted by publishedAt DESC)
     public List<Post> getLatestPublishedPosts(int limit) {
 
         return postRepository.findByStatus(
@@ -147,8 +166,6 @@ public class PostService {
         ).getContent();
     }
 
-
-    // Top posts (sorted by likes DESC)
     public List<Post> getTopPosts(int limit) {
 
         return postRepository.findByStatus(
@@ -160,7 +177,4 @@ public class PostService {
                 )
         ).getContent();
     }
-
-
-
 }

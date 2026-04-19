@@ -22,6 +22,8 @@ public class Post {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String title;
+
     @Column(length = 5000)
     private String content;
 
@@ -41,6 +43,10 @@ public class Post {
     private LocalDateTime scheduledAt;
 
     private LocalDateTime publishedAt;
+
+    private boolean permanent = false;
+
+    private String link = "https://3lm-solutions2.odoo.com/contactus";
 
     /*
      Latest metrics snapshot

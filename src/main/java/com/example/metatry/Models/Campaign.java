@@ -4,7 +4,6 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
 @Entity
 @Getter
 @Setter
@@ -17,17 +16,11 @@ public class Campaign {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String name;
+
     private String topic;
 
-    private int numberOfPosts;
-
-    private LocalDateTime startDate;
-
-    private int frequencyDays;
-
-    private String platform;
-
-    private boolean active;
+    private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "campaign")
     private List<Post> posts;

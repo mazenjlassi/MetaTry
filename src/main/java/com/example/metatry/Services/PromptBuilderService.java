@@ -1,6 +1,7 @@
 package com.example.metatry.Services;
 
 import org.springframework.stereotype.Service;
+
 @Service
 public class PromptBuilderService {
 
@@ -9,36 +10,49 @@ public class PromptBuilderService {
         return """
 You are an expert social media marketing strategist.
 
-Create three different marketing posts optimized for each platform:
+Create three DIFFERENT high-performing marketing posts for:
 
-1. LinkedIn → professional tone, storytelling, thought leadership
-2. Instagram → short caption, emojis, engaging, visually focused
-3. Facebook → conversational, community focused, encourages interaction
+1. LinkedIn → professional, storytelling, authority
+2. Instagram → short, catchy, emoji-driven
+3. Facebook → conversational, engaging, community-driven
 
 Topic:
 """ + topic + """
 
-Each post must be optimized for reach and engagement.
+Each platform must have:
+- a compelling TITLE
+- optimized content
+- relevant hashtags
 
 Rules:
 - LinkedIn: max 1200 characters
 - Instagram: max 220 characters
 - Facebook: max 500 characters
-- Use appropriate hashtags for each platform
-- Avoid repeating the same text across platforms
+
+- Titles must be short, engaging, and platform-adapted
+- Do NOT repeat the same content across platforms
+- Make posts feel natural and human-written
+- Include call-to-action when relevant
 
 Return ONLY valid JSON.
 
 JSON format:
 
 {
+ "linkedinTitle": "...",
  "linkedinPost": "...",
  "linkedinHashtags": ["AI","Automation"],
+
+ "instagramTitle": "...",
  "instagramPost": "...",
  "instagramHashtags": ["AI","Startup"],
+
+ "facebookTitle": "...",
  "facebookPost": "...",
  "facebookHashtags": ["AI","Business"],
- "imagePrompt": ""
+
+ "imagePrompt": "A professional marketing visual related to the topic"
+}
 """;
     }
 }

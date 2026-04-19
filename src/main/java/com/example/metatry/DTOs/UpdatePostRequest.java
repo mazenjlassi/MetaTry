@@ -7,6 +7,7 @@ import java.util.List;
 
 @Data
 public class UpdatePostRequest {
+    private String title;
 
     private String content;
 
@@ -21,5 +22,10 @@ public class UpdatePostRequest {
     private Boolean approved;
 
     private LocalDateTime scheduledAt;
+
+    private Boolean permanent;
+
+    private String link;
+
 
 }

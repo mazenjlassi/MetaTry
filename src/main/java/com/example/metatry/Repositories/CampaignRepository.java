@@ -7,6 +7,5 @@ import java.util.List;
 
 public interface CampaignRepository extends JpaRepository<Campaign, Long> {
 
-    List<Campaign> findByActiveTrue();
-
+    List<Campaign> findAllByOrderByCreatedAtDesc();
 }
