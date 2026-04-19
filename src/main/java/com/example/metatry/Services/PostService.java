@@ -131,4 +131,36 @@ public class PostService {
         }
     }
 
+
+    // ================= DASHBOARD =================
+
+    // Latest posts (sorted by publishedAt DESC)
+    public List<Post> getLatestPublishedPosts(int limit) {
+
+        return postRepository.findByStatus(
+                PostStatus.PUBLISHED,
+                org.springframework.data.domain.PageRequest.of(
+                        0,
+                        limit,
+                        org.springframework.data.domain.Sort.by("publishedAt").descending()
+                )
+        ).getContent();
+    }
+
+
+    // Top posts (sorted by likes DESC)
+    public List<Post> getTopPosts(int limit) {
+
+        return postRepository.findByStatus(
+                PostStatus.PUBLISHED,
+                org.springframework.data.domain.PageRequest.of(
+                        0,
+                        limit,
+                        org.springframework.data.domain.Sort.by("likes").descending()
+                )
+        ).getContent();
+    }
+
+
+
 }

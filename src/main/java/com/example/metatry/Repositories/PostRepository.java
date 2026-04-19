@@ -3,6 +3,8 @@ package com.example.metatry.Repositories;
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Enums.PostStatus;
 import com.example.metatry.Models.Post;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
@@ -27,5 +29,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             PostStatus status,
             LocalDateTime time
     );
+
+    Page<Post> findByStatus(PostStatus status, Pageable pageable);
 
 }

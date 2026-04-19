@@ -87,6 +87,7 @@ public class PostController {
 
     // Statistics
     @GetMapping("/stats")
+    @PreAuthorize("isAuthenticated()")
     public PostStatsResponse getStats(){
         return postService.getStats();
     }
@@ -125,6 +126,27 @@ public class PostController {
         return ResponseEntity.ok("Duplicate images removed");
     }
 
+
+
+    // endpoints for dashboard
+
+    //  Latest posts with limit (dashboard ready)
+    @GetMapping("/latestPublished")
+    @PreAuthorize("isAuthenticated()")
+    public List<Post> getPublishedPosts(
+            @RequestParam(defaultValue = "15") int limit
+    ){
+        return postService.getLatestPublishedPosts(limit);
+    }
+
+    //  Top posts (by likes)
+    @GetMapping("/top")
+    @PreAuthorize("isAuthenticated()")
+    public List<Post> getTopPosts(
+            @RequestParam(defaultValue = "5") int limit
+    ){
+        return postService.getTopPosts(limit);
+    }
 
 
 
