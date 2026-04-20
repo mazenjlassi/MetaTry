@@ -28,7 +28,6 @@ public class PostService {
     }
 
     // ================= UPDATE POST =================
-
     public Post updatePost(Long id, UpdatePostRequest request){
 
         Post post = postRepository.findById(id)
@@ -41,10 +40,7 @@ public class PostService {
             post.setContent(request.getContent());
 
         if(request.getHashtags() != null)
-            post.setHashtags(request.getHashtags());
-
-        if(request.getPlatform() != null)
-            post.setPlatform(request.getPlatform());
+            post.setHashtags(request.getHashtags().replace(" ", ""));
 
         if(request.getVideoUrl() != null)
             post.setVideoUrl(request.getVideoUrl());
@@ -61,9 +57,16 @@ public class PostService {
         if(request.getLink() != null)
             post.setLink(request.getLink());
 
+        // 🔥 optional: restrict platform change
+        if(request.getPlatform() != null && post.getStatus() == PostStatus.DRAFT)
+            post.setPlatform(request.getPlatform());
+
+        // 🔥 update image if exists
+        if(request.getImageUrl() != null && post.getImage() != null)
+            post.getImage().setImageUrl(request.getImageUrl());
+
         return postRepository.save(post);
     }
-
     // ================= DELETE =================
 
     public void deletePost(Long id){
@@ -176,5 +179,17 @@ public class PostService {
                         org.springframework.data.domain.Sort.by("likes").descending()
                 )
         ).getContent();
+    }
+
+    // ================= POSTS DISPLAY =================
+
+    //  By campaign
+    public List<Post> getPostsByCampaign(Long campaignId) {
+        return postRepository.findByCampaignId(campaignId);
+    }
+
+    //  Campaign + Status
+    public List<Post> getCampaignPostsByStatus(Long campaignId, PostStatus status) {
+        return postRepository.findByCampaignIdAndStatus(campaignId, status);
     }
 }

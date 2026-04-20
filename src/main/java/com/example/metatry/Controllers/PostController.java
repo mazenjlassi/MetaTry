@@ -2,8 +2,8 @@ package com.example.metatry.Controllers;
 
 import com.example.metatry.DTOs.PostStatsResponse;
 import com.example.metatry.DTOs.UpdatePostRequest;
-import com.example.metatry.Enums.ImageSize;
 import com.example.metatry.Enums.PlatformType;
+import com.example.metatry.Enums.PostStatus;
 import com.example.metatry.Models.Post;
 import com.example.metatry.Models.PostImage;
 import com.example.metatry.Repositories.PostImageRepository;
@@ -16,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/posts")
@@ -27,80 +28,90 @@ public class PostController {
     private final AiImageService aiImageService;
     private final PostImageRepository postImageRepository;
 
-    // Pending posts (not approved)
-    @GetMapping("/pending")
-    public List<Post> pendingPosts(){
-        return postRepository.findByApprovedFalse();
-    }
+    // ================= BASIC =================
 
-    // Update post
-    @PutMapping("/{id}")
-    public ResponseEntity<String> updatePost(
-            @PathVariable Long id,
-            @RequestBody UpdatePostRequest request){
-
-        postService.updatePost(id, request);
-
-        return ResponseEntity.ok("Post updated");
-    }
-
-    // Get all posts
     @GetMapping
     public List<Post> getAllPosts(){
         return postService.getAllPosts();
     }
 
-    // Get published posts
-    @GetMapping("/published")
-    public List<Post> getPublishedPosts(){
-        return postService.getPublishedPosts();
-    }
-
-    @DeleteMapping("/{id}")
+    @GetMapping("/drafts")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<String> deletePost(@PathVariable Long id){
-
-        postService.deletePost(id);
-
-        return ResponseEntity.ok("Post deleted successfully");
-    }
-
-
-
-    // Get draft posts
-    @GetMapping("/draft")
-    public List<Post> getDraftPosts(){
+    public List<Post> getDrafts() {
         return postService.getDraftPosts();
     }
 
-    // Get approved posts
+    @GetMapping("/scheduled")
+    @PreAuthorize("isAuthenticated()")
+    public List<Post> getScheduled() {
+        return postService.getScheduledPosts();
+    }
+
+    @GetMapping("/published")
+    @PreAuthorize("isAuthenticated()")
+    public List<Post> getPublished() {
+        return postService.getPublishedPosts();
+    }
+
     @GetMapping("/approved")
     public List<Post> getApprovedPosts(){
         return postService.getApprovedPosts();
     }
 
-    // Get posts by platform
     @GetMapping("/platform/{platform}")
     public List<Post> getPostsByPlatform(@PathVariable PlatformType platform){
         return postService.getPostsByPlatform(platform);
     }
 
-    // Statistics
+    // ================= CAMPAIGN =================
+
+    @GetMapping("/campaign/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public List<Post> getByCampaign(@PathVariable Long id) {
+        return postService.getPostsByCampaign(id);
+    }
+
+    @GetMapping("/campaign/{id}/status/{status}")
+    @PreAuthorize("isAuthenticated()")
+    public List<Post> getCampaignPostsByStatus(
+            @PathVariable Long id,
+            @PathVariable PostStatus status) {
+
+        return postService.getCampaignPostsByStatus(id, status);
+    }
+
+    // ================= UPDATE =================
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updatePost(
+            @PathVariable Long id,
+            @RequestBody UpdatePostRequest request){
+
+        postService.updatePost(id, request);
+
+        return ResponseEntity.ok(Map.of("message", "Post updated"));
+    }
+
+    // ================= DELETE =================
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> deletePost(@PathVariable Long id){
+
+        postService.deletePost(id);
+
+        return ResponseEntity.ok(Map.of("message", "Post deleted successfully"));
+    }
+
+    // ================= STATS =================
+
     @GetMapping("/stats")
     @PreAuthorize("isAuthenticated()")
     public PostStatsResponse getStats(){
         return postService.getStats();
     }
 
-    // Posts ready for scheduler
-    @GetMapping("/scheduled")
-    public List<Post> getScheduledPosts() {
-        return postService.getScheduledPosts();
-    }
-
-    /**
-     * Generate AI image from imagePrompt
-     */
+    // ================= AI IMAGE =================
 
     @PostMapping("/{id}/generate-image")
     @PreAuthorize("isAuthenticated()")
@@ -114,32 +125,26 @@ public class PostController {
         return ResponseEntity.ok(image);
     }
 
-
-
-
+    // ================= CLEANUP =================
 
     @DeleteMapping("/cleanup-images")
-    public ResponseEntity<String> cleanDuplicateImages(){
+    public ResponseEntity<?> cleanDuplicateImages(){
 
         postService.cleanDuplicateImages();
 
-        return ResponseEntity.ok("Duplicate images removed");
+        return ResponseEntity.ok(Map.of("message", "Duplicate images removed"));
     }
 
+    // ================= DASHBOARD =================
 
-
-    // endpoints for dashboard
-
-    //  Latest posts with limit (dashboard ready)
     @GetMapping("/latestPublished")
     @PreAuthorize("isAuthenticated()")
-    public List<Post> getPublishedPosts(
+    public List<Post> getLatestPublished(
             @RequestParam(defaultValue = "15") int limit
     ){
         return postService.getLatestPublishedPosts(limit);
     }
 
-    //  Top posts (by likes)
     @GetMapping("/top")
     @PreAuthorize("isAuthenticated()")
     public List<Post> getTopPosts(
@@ -147,7 +152,4 @@ public class PostController {
     ){
         return postService.getTopPosts(limit);
     }
-
-
-
 }
