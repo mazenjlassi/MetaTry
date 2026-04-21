@@ -12,28 +12,28 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-@Service
+import java.util.Map;@Service
 @RequiredArgsConstructor
 public class AnalyticsService {
 
     private final PostService postService;
     private final PostMetricRepository postMetricRepository;
     private final PostRepository postRepository;
-    private final FacebookTokenService tokenService;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    /**
-     * Main entry: Collect metrics for all published posts
-     */
+    @Value("${facebook.page-access-token}")
+    private String token;
+
+    @Value("${facebook.page-id}")
+    private String pageId;
+
     public void collectMetricsForPublishedPosts(){
 
         List<Post> posts = postService.getPublishedPosts();
 
         for(Post post : posts){
 
-            // Skip posts without platform ID
             if(post.getPlatformPostId() == null) continue;
 
             try {
@@ -41,34 +41,23 @@ public class AnalyticsService {
                 switch (post.getPlatform()){
 
                     case FACEBOOK -> fetchFacebookMetrics(post);
-
                     case INSTAGRAM -> fetchInstagramMetrics(post);
-
-                    case LINKEDIN -> {
-                        // Skip for now (API restricted)
-                        continue;
-                    }
+                    case LINKEDIN -> { continue; }
                 }
 
             } catch (Exception e){
                 System.out.println("❌ Error fetching metrics for post " + post.getPlatformPostId());
-                e.printStackTrace(); // important for debugging
+                e.printStackTrace();
             }
         }
     }
 
-    /**
-     * Fetch metrics from Facebook Page posts
-     */
     private void fetchFacebookMetrics(Post post){
-
-        String token = tokenService.getPageToken();
 
         String postId = post.getPlatformPostId();
 
-        // 🔥 Fix: build FULL Facebook ID if missing pageId
+        // Fix postId format
         if(postId != null && !postId.contains("_")){
-            String pageId = "968174046384507";
             postId = pageId + "_" + postId;
         }
 
@@ -86,8 +75,6 @@ public class AnalyticsService {
                 return;
             }
 
-            System.out.println("✅ FB Response: " + response);
-
             int likes = extractLikes(response);
             int comments = extractComments(response);
             int shares = extractShares(response);
@@ -100,24 +87,15 @@ public class AnalyticsService {
         }
     }
 
-    /**
-     * Fetch metrics from Instagram media
-     */
     private void fetchInstagramMetrics(Post post){
-
-        String token = tokenService.getPageToken();
 
         String url = "https://graph.facebook.com/v19.0/" + post.getPlatformPostId() +
                 "?fields=like_count,comments_count" +
                 "&access_token=" + token;
 
-        System.out.println("➡️ Instagram API call: " + post.getPlatformPostId());
-
         Map<String, Object> response = restTemplate.getForObject(url, Map.class);
 
         if(response == null) return;
-
-        System.out.println("✅ IG Response: " + response);
 
         int likes = response.get("like_count") != null
                 ? ((Number) response.get("like_count")).intValue()
@@ -127,65 +105,40 @@ public class AnalyticsService {
                 ? ((Number) response.get("comments_count")).intValue()
                 : 0;
 
-        int shares = 0; // Instagram doesn't support shares
-
-        saveAndUpdate(post, likes, comments, shares, 0);
+        saveAndUpdate(post, likes, comments, 0, 0);
     }
 
-    /**
-     * Extract Facebook likes safely
-     */
     private int extractLikes(Map<String, Object> response){
         try{
             Map<String, Object> likes = (Map<String, Object>) response.get("likes");
-            if(likes == null) return 0;
-
             Map<String, Object> summary = (Map<String, Object>) likes.get("summary");
-            if(summary == null) return 0;
-
             return ((Number) summary.get("total_count")).intValue();
         } catch(Exception e){
             return 0;
         }
     }
 
-    /**
-     * Extract Facebook comments safely
-     */
     private int extractComments(Map<String, Object> response){
         try{
             Map<String, Object> comments = (Map<String, Object>) response.get("comments");
-            if(comments == null) return 0;
-
             Map<String, Object> summary = (Map<String, Object>) comments.get("summary");
-            if(summary == null) return 0;
-
             return ((Number) summary.get("total_count")).intValue();
         } catch(Exception e){
             return 0;
         }
     }
 
-    /**
-     * Extract Facebook shares safely
-     */
     private int extractShares(Map<String, Object> response){
         try{
             Map<String, Object> shares = (Map<String, Object>) response.get("shares");
-            if(shares == null) return 0;
-
             return ((Number) shares.get("count")).intValue();
         } catch(Exception e){
             return 0;
         }
     }
-
-    /**
-     * Save metrics history + update latest snapshot in Post
-     */
     private void saveAndUpdate(Post post, int likes, int comments, int shares, int impressions){
 
-        // Save metrics history
+        // ✅ 1. Save history (ALWAYS)
         PostMetric metric = PostMetric.builder()
                 .post(post)
                 .likes(likes)
@@ -197,19 +150,30 @@ public class AnalyticsService {
 
         postMetricRepository.save(metric);
 
-        // Update latest snapshot in Post
-        post.setLikes(likes);
-        post.setCommentsCount(comments);
-        post.setShares(shares);
-        post.setImpressions(impressions);
+        // ✅ 2. Update latest snapshot SAFELY (never decrease)
+        int currentLikes = post.getLikes() != null ? post.getLikes() : 0;
+        int currentComments = post.getCommentsCount() != null ? post.getCommentsCount() : 0;
+        int currentShares = post.getShares() != null ? post.getShares() : 0;
+        int currentImpressions = post.getImpressions() != null ? post.getImpressions() : 0;
 
-        // Simple engagement formula
-        double engagement = impressions > 0
-                ? (double)(likes + comments * 2 + shares * 3) / impressions
+        post.setLikes(Math.max(currentLikes, likes));
+        post.setCommentsCount(Math.max(currentComments, comments));
+        post.setShares(Math.max(currentShares, shares));
+        post.setImpressions(Math.max(currentImpressions, impressions));
+
+        // ✅ 3. Calculate engagement (fallback if impressions = 0)
+        int safeImpressions = post.getImpressions() > 0
+                ? post.getImpressions()
+                : (post.getLikes() + post.getCommentsCount() + post.getShares());
+
+        double engagement = safeImpressions > 0
+                ? (double)(post.getLikes() + post.getCommentsCount() * 2 + post.getShares() * 3)
+                / safeImpressions
                 : 0;
 
         post.setEngagementScore(engagement);
 
+        // ✅ 4. Save post
         postRepository.save(post);
     }
 }

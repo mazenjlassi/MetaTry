@@ -107,8 +107,9 @@ public class SocialPublisherService {
             response = facebookService.postText(caption);
         }
 
-        if(Boolean.TRUE.equals(response.get("success"))){
-            post.setPlatformPostId((String) response.get("postId"));
+        // ✅ FIX: Facebook returns "id"
+        if(response != null && response.get("id") != null){
+            post.setPlatformPostId((String) response.get("id"));
         }
     }
 

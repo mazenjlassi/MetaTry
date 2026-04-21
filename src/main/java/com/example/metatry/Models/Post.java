@@ -68,6 +68,7 @@ public class Post {
 
     private Boolean approved = false;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "campaign_id")
     private Campaign campaign;
