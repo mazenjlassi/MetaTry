@@ -34,12 +34,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     List<Post> findByPermanentTrue();
 
-
-
-    //  Scheduled posts
-    List<Post> findByApprovedTrueAndScheduledAtAfter(LocalDateTime time);
-
-
     //  By campaign
     List<Post> findByCampaignId(Long campaignId);
 

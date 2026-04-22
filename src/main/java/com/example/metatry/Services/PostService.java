@@ -65,6 +65,10 @@ public class PostService {
         if(request.getImageUrl() != null && post.getImage() != null)
             post.getImage().setImageUrl(request.getImageUrl());
 
+        if (post.getScheduledAt() != null) {
+            post.setStatus(PostStatus.SCHEDULED);
+        }
+
         return postRepository.save(post);
     }
     // ================= DELETE =================
@@ -128,11 +132,7 @@ public class PostService {
 
     public List<Post> getScheduledPosts(){
 
-        return postRepository
-                .findByApprovedTrueAndStatusAndScheduledAtBefore(
-                        PostStatus.DRAFT,
-                        LocalDateTime.now()
-                );
+        return postRepository.findByStatus(PostStatus.SCHEDULED);
     }
 
     // ================= CLEAN IMAGES =================
