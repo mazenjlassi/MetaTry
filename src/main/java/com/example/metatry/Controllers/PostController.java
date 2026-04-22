@@ -1,5 +1,6 @@
 package com.example.metatry.Controllers;
 
+import com.example.metatry.DTOs.PostDto;
 import com.example.metatry.DTOs.PostStatsResponse;
 import com.example.metatry.DTOs.UpdatePostRequest;
 import com.example.metatry.Enums.PlatformType;
@@ -33,6 +34,13 @@ public class PostController {
     @GetMapping
     public List<Post> getAllPosts(){
         return postService.getAllPosts();
+    }
+
+
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PostDto> getPostById(@PathVariable Long id) {
+        return ResponseEntity.ok(postService.getPostById(id));
     }
 
     @GetMapping("/drafts")
@@ -151,5 +159,12 @@ public class PostController {
             @RequestParam(defaultValue = "5") int limit
     ){
         return postService.getTopPosts(limit);
+    }
+
+    @GetMapping("/permanent")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<Post>> getPermanentPosts() {
+        List<Post> posts = postService.getPermanentPosts();
+        return ResponseEntity.ok(posts);
     }
 }

@@ -1,5 +1,6 @@
 package com.example.metatry.Services;
 
+import com.example.metatry.DTOs.PostDto;
 import com.example.metatry.DTOs.PostStatsResponse;
 import com.example.metatry.DTOs.UpdatePostRequest;
 import com.example.metatry.Enums.PlatformType;
@@ -27,11 +28,45 @@ public class PostService {
         return postRepository.findAll();
     }
 
+    public PostDto mapToDto(Post post) {
+        return PostDto.builder()
+                .id(post.getId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .hashtags(post.getHashtags())
+                .platform(post.getPlatform() != null ? post.getPlatform().name() : null)
+                .scheduledAt(post.getScheduledAt())
+                .publishedAt(post.getPublishedAt())
+                .permanent(post.isPermanent())
+                .link(post.getLink())
+                .likes(post.getLikes())
+                .commentsCount(post.getCommentsCount())
+                .shares(post.getShares())
+                .campaignId(post.getCampaign() != null ? post.getCampaign().getId() : null)
+                .campaignName(post.getCampaign() != null ? post.getCampaign().getName() : null)
+                .imageUrl(post.getImage() != null ? post.getImage().getImageUrl() : null)
+                .status(post.getStatus().name())
+
+                .build();
+    }
+
+    public PostDto getPostById(Long id) {
+        Post post = postRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        return mapToDto(post);
+    }
+
     // ================= UPDATE POST =================
     public Post updatePost(Long id, UpdatePostRequest request){
 
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        // 🚨 BLOCK update if published (unless permanent)
+        if (post.getStatus() == PostStatus.PUBLISHED && !post.isPermanent()) {
+            throw new RuntimeException("Cannot update a published non-permanent post");
+        }
 
         if(request.getTitle() != null)
             post.setTitle(request.getTitle());
@@ -57,7 +92,7 @@ public class PostService {
         if(request.getLink() != null)
             post.setLink(request.getLink());
 
-        // 🔥 optional: restrict platform change
+        // 🔥 restrict platform change
         if(request.getPlatform() != null && post.getStatus() == PostStatus.DRAFT)
             post.setPlatform(request.getPlatform());
 
@@ -65,12 +100,15 @@ public class PostService {
         if(request.getImageUrl() != null && post.getImage() != null)
             post.getImage().setImageUrl(request.getImageUrl());
 
-        if (post.getScheduledAt() != null) {
+        // 🔥 update status logic
+        if (post.getScheduledAt() != null && post.getStatus() != PostStatus.PUBLISHED) {
             post.setStatus(PostStatus.SCHEDULED);
         }
 
         return postRepository.save(post);
     }
+
+
     // ================= DELETE =================
 
     public void deletePost(Long id){

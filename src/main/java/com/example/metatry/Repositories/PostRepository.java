@@ -6,13 +6,22 @@ import com.example.metatry.Models.Post;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    List<Post> findByApprovedFalse();
+    @Query("""
+    SELECT p FROM Post p
+    LEFT JOIN FETCH p.image
+    LEFT JOIN FETCH p.campaign
+    WHERE p.id = :id
+""")
+    Optional<Post> findByIdWithDetails(@Param("id") Long id);
 
     List<Post> findByApprovedTrue();
 
