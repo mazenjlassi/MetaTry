@@ -94,6 +94,11 @@ public class Post {
     @JsonManagedReference
     private PostImage image;
 
+     /*
+    Image for this post
+   */
+     private boolean notificationSent = false;
+
 
 
 }

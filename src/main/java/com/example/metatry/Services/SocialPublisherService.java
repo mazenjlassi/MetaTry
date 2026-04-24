@@ -19,7 +19,7 @@ public class SocialPublisherService {
     private final InstagramService instagramService;
     private final FacebookService facebookService;
     private final LinkedInService linkedInService;
-
+    private final EmailService emailService;
     private final PostRepository postRepository;
 
     public Post publishPost(Post post){
@@ -29,20 +29,27 @@ public class SocialPublisherService {
         }
 
         String caption = buildCaption(post);
-
         PostImage image = selectBestImage(post);
 
         switch (post.getPlatform()) {
 
             case INSTAGRAM -> publishInstagram(post, image, caption);
-
             case FACEBOOK -> publishFacebook(post, image, caption);
-
             case LINKEDIN -> publishLinkedIn(post, image, caption);
         }
 
+        // ✅ Set publish state
         post.setStatus(PostStatus.PUBLISHED);
         post.setPublishedAt(LocalDateTime.now());
+
+        // ✅ EMAIL TRIGGER HERE
+        if (post.getPlatformPostId() != null
+                && post.getStatus() == PostStatus.PUBLISHED
+                && !post.isNotificationSent()) {
+
+            emailService.sendPostPublishedEmail(post);
+            post.setNotificationSent(true);
+        }
 
         return postRepository.save(post);
     }
