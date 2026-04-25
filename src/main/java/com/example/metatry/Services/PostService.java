@@ -1,12 +1,15 @@
 package com.example.metatry.Services;
 
+import com.example.metatry.DTOs.CreatePostRequest;
 import com.example.metatry.DTOs.PostDto;
 import com.example.metatry.DTOs.PostStatsResponse;
 import com.example.metatry.DTOs.UpdatePostRequest;
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Enums.PostStatus;
+import com.example.metatry.Models.Campaign;
 import com.example.metatry.Models.Post;
 import com.example.metatry.Models.PostImage;
+import com.example.metatry.Repositories.CampaignRepository;
 import com.example.metatry.Repositories.PostImageRepository;
 import com.example.metatry.Repositories.PostRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +26,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final PostImageRepository postImageRepository;
+    private final CampaignRepository campaignRepository;
 
     public List<Post> getAllPosts(){
         return postRepository.findAll();
@@ -117,6 +121,41 @@ public class PostService {
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
         postRepository.delete(post);
+    }
+
+    // =================  CREATE MANUALLY =================
+
+    public Post createPostForCampaign(Long campaignId, CreatePostRequest request) {
+
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+
+        Post post = new Post();
+
+        post.setTitle(request.getTitle());
+        post.setContent(request.getContent());
+        post.setHashtags(request.getHashtags());
+        post.setPlatform(request.getPlatform());
+
+        post.setGeneratedByAI(false);
+        post.setApproved(true); // or false if you want manual approval
+
+        post.setStatus(PostStatus.SCHEDULED);
+        post.setScheduledAt(request.getScheduledAt());
+
+        post.setPermanent(request.isPermanent()); // ✅ keep your logic
+
+        post.setCampaign(campaign); // ✅ VERY IMPORTANT
+
+        // image
+        if (request.getImageUrl() != null) {
+            PostImage image = new PostImage();
+            image.setImageUrl(request.getImageUrl());
+            image.setPost(post); // bidirectional
+            post.setImage(image);
+        }
+
+        return postRepository.save(post);
     }
 
     // ================= BASIC GET =================
@@ -230,4 +269,6 @@ public class PostService {
     public List<Post> getCampaignPostsByStatus(Long campaignId, PostStatus status) {
         return postRepository.findByCampaignIdAndStatus(campaignId, status);
     }
+
+
 }

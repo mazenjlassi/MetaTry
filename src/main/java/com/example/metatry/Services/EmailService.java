@@ -15,7 +15,7 @@ public class EmailService {
     public void sendPostPublishedEmail(Post post) {
         SimpleMailMessage message = new SimpleMailMessage();
 
-        message.setTo("jlmazen1073@gmail.com");
+        message.setTo("mazenjl323@gmail.com");
         message.setSubject("Post Published ✅");
         message.setText(
                 "Your post has been published successfully.\n\n" +

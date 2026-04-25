@@ -1,5 +1,6 @@
 package com.example.metatry.Controllers;
 
+import com.example.metatry.DTOs.CreatePostRequest;
 import com.example.metatry.DTOs.PostDto;
 import com.example.metatry.DTOs.PostStatsResponse;
 import com.example.metatry.DTOs.UpdatePostRequest;
@@ -111,7 +112,17 @@ public class PostController {
         return ResponseEntity.ok(Map.of("message", "Post deleted successfully"));
     }
 
+    // ================= CREATE MANUALLY =================
+    @PostMapping("/campaigns/{campaignId}/posts")
+    public Post createPost(
+            @PathVariable Long campaignId,
+            @RequestBody CreatePostRequest request
+    ) {
+        return postService.createPostForCampaign(campaignId, request);
+    }
     // ================= STATS =================
+
+
 
     @GetMapping("/stats")
     @PreAuthorize("isAuthenticated()")

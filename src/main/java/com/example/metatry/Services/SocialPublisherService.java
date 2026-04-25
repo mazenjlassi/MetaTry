@@ -21,7 +21,6 @@ public class SocialPublisherService {
     private final LinkedInService linkedInService;
     private final EmailService emailService;
     private final PostRepository postRepository;
-
     public Post publishPost(Post post){
 
         if(!Boolean.TRUE.equals(post.getApproved())){
@@ -32,7 +31,6 @@ public class SocialPublisherService {
         PostImage image = selectBestImage(post);
 
         switch (post.getPlatform()) {
-
             case INSTAGRAM -> publishInstagram(post, image, caption);
             case FACEBOOK -> publishFacebook(post, image, caption);
             case LINKEDIN -> publishLinkedIn(post, image, caption);
@@ -42,13 +40,17 @@ public class SocialPublisherService {
         post.setStatus(PostStatus.PUBLISHED);
         post.setPublishedAt(LocalDateTime.now());
 
-        // ✅ EMAIL TRIGGER HERE
+        // ✅ EMAIL (SAFE)
         if (post.getPlatformPostId() != null
                 && post.getStatus() == PostStatus.PUBLISHED
                 && !post.isNotificationSent()) {
 
-            emailService.sendPostPublishedEmail(post);
-            post.setNotificationSent(true);
+            try {
+                emailService.sendPostPublishedEmail(post);
+                post.setNotificationSent(true);
+            } catch (Exception e) {
+                System.out.println("❌ Email failed: " + e.getMessage());
+            }
         }
 
         return postRepository.save(post);

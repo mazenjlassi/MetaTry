@@ -3,6 +3,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 @Entity
 @Getter
@@ -22,6 +23,6 @@ public class Campaign {
 
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "campaign")
-    private List<Post> posts;
+    @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL)
+    private List<Post> posts = new ArrayList<>();
 }

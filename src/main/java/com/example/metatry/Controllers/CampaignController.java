@@ -4,6 +4,7 @@ import com.example.metatry.DTOs.CreateCampaignRequest;
 import com.example.metatry.Models.Campaign;
 import com.example.metatry.Models.Post;
 import com.example.metatry.Services.CampaignService;
+import com.example.metatry.Services.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +16,7 @@ import java.util.List;
 public class CampaignController {
 
     private final CampaignService campaignService;
+    private final PostService postService;
 
     // 🔥 Create campaign + generate posts
     @PostMapping("/generate")
@@ -40,4 +42,9 @@ public class CampaignController {
         campaignService.deleteCampaign(id);
         return "Campaign deleted";
     }
+    @GetMapping("/{campaignId}/posts")
+    public List<Post> getPostsByCampaign(@PathVariable Long campaignId) {
+        return postService.getPostsByCampaign(campaignId);
+    }
+
 }
