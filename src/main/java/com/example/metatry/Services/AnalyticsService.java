@@ -2,23 +2,30 @@ package com.example.metatry.Services;
 
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Models.Post;
+import com.example.metatry.Models.PostComment;
 import com.example.metatry.Models.PostMetric;
+import com.example.metatry.Repositories.PostCommentRepository;
 import com.example.metatry.Repositories.PostMetricRepository;
 import com.example.metatry.Repositories.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;@Service
+import java.util.Map;
+
+@Service
 @RequiredArgsConstructor
 public class AnalyticsService {
 
     private final PostService postService;
     private final PostMetricRepository postMetricRepository;
     private final PostRepository postRepository;
+    private final PostCommentRepository postCommentRepository;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -27,6 +34,8 @@ public class AnalyticsService {
 
     @Value("${facebook.page-id}")
     private String pageId;
+
+    // ================= MAIN =================
 
     public void collectMetricsForPublishedPosts(){
 
@@ -40,52 +49,123 @@ public class AnalyticsService {
 
                 switch (post.getPlatform()){
 
-                    case FACEBOOK -> fetchFacebookMetrics(post);
+                    case FACEBOOK -> {
+                        fetchFacebookMetrics(post);
+                        fetchFacebookComments(post); // ✅ FIXED
+                    }
+
                     case INSTAGRAM -> fetchInstagramMetrics(post);
+
                     case LINKEDIN -> { continue; }
                 }
 
             } catch (Exception e){
-                System.out.println("❌ Error fetching metrics for post " + post.getPlatformPostId());
+                System.out.println("❌ Error fetching analytics for post " + post.getPlatformPostId());
                 e.printStackTrace();
             }
         }
     }
 
+    // ================= FACEBOOK METRICS =================
+
     private void fetchFacebookMetrics(Post post){
 
         String postId = post.getPlatformPostId();
 
-        // Fix postId format
         if(postId != null && !postId.contains("_")){
             postId = pageId + "_" + postId;
         }
 
         String url = "https://graph.facebook.com/v19.0/" + postId +
-                "?fields=likes.summary(true),comments.summary(true),shares" +
+                "?fields=reactions.summary(true),comments.summary(true),shares" +
                 "&access_token=" + token;
 
-        System.out.println("➡️ Facebook API call: " + postId);
+        System.out.println("➡️ Facebook Metrics API: " + postId);
 
         try {
+
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
 
-            if(response == null){
-                System.out.println("❌ FB response is null");
-                return;
-            }
+            if(response == null) return;
 
-            int likes = extractLikes(response);
+            int likes = extractReactions(response);
             int comments = extractComments(response);
             int shares = extractShares(response);
 
             saveAndUpdate(post, likes, comments, shares, 0);
 
         } catch (Exception e){
-            System.out.println("❌ Facebook fetch failed for post: " + postId);
+            System.out.println("❌ Facebook metrics failed: " + postId);
             e.printStackTrace();
         }
     }
+
+    // ================= FACEBOOK COMMENTS (FINAL FIX) =================
+
+    private void fetchFacebookComments(Post post){
+
+        String postId = post.getPlatformPostId();
+
+        // ⚠️ Try WITHOUT pageId prefix (more reliable for comments)
+        System.out.println("➡️ Fetching comments for: " + postId);
+
+        try {
+
+            String url = "https://graph.facebook.com/v19.0/" + postId +
+                    "/comments?fields=id,message,created_time&access_token=" + token;
+
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+
+            System.out.println("RAW FB COMMENTS RESPONSE: " + response);
+
+            if(response == null || response.get("data") == null) return;
+
+            List<Map<String, Object>> comments =
+                    (List<Map<String, Object>>) response.get("data");
+
+            System.out.println("COMMENTS SIZE: " + comments.size());
+
+            for(Map<String, Object> c : comments){
+
+                String commentId = (String) c.get("id");
+
+                if(postCommentRepository.existsByExternalCommentId(commentId)){
+                    continue;
+                }
+
+                String content = (String) c.get("message");
+                if(content == null) continue;
+
+                Map<String, Object> from = (Map<String, Object>) c.get("from");
+                String author = from != null ? (String) from.get("name") : "Unknown";
+
+                String createdTime = (String) c.get("created_time");
+
+                PostComment comment = PostComment.builder()
+                        .externalCommentId(commentId)
+                        .commentText(content)
+                        .authorName(author)
+                        .createdAt(parseFacebookDate(createdTime))
+                        .sentiment(analyzeSentiment(content))
+                        .post(post)
+                        .build();
+
+                postCommentRepository.save(comment);
+            }
+
+            // ✅ Update from DB (REAL comments)
+            long realComments = postCommentRepository.countByPostId(post.getId());
+            post.setCommentsCount((int) realComments);
+
+            postRepository.save(post);
+
+        } catch (Exception e){
+            System.out.println("❌ Failed to fetch comments for: " + postId);
+            e.printStackTrace();
+        }
+    }
+
+    // ================= INSTAGRAM =================
 
     private void fetchInstagramMetrics(Post post){
 
@@ -108,10 +188,12 @@ public class AnalyticsService {
         saveAndUpdate(post, likes, comments, 0, 0);
     }
 
-    private int extractLikes(Map<String, Object> response){
+    // ================= EXTRACTORS =================
+
+    private int extractReactions(Map<String, Object> response){
         try{
-            Map<String, Object> likes = (Map<String, Object>) response.get("likes");
-            Map<String, Object> summary = (Map<String, Object>) likes.get("summary");
+            Map<String, Object> reactions = (Map<String, Object>) response.get("reactions");
+            Map<String, Object> summary = (Map<String, Object>) reactions.get("summary");
             return ((Number) summary.get("total_count")).intValue();
         } catch(Exception e){
             return 0;
@@ -136,9 +218,11 @@ public class AnalyticsService {
             return 0;
         }
     }
+
+    // ================= SAVE + UPDATE =================
+
     private void saveAndUpdate(Post post, int likes, int comments, int shares, int impressions){
 
-        // ✅ 1. Save history (ALWAYS)
         PostMetric metric = PostMetric.builder()
                 .post(post)
                 .likes(likes)
@@ -150,7 +234,6 @@ public class AnalyticsService {
 
         postMetricRepository.save(metric);
 
-        // ✅ 2. Update latest snapshot SAFELY (never decrease)
         int currentLikes = post.getLikes() != null ? post.getLikes() : 0;
         int currentComments = post.getCommentsCount() != null ? post.getCommentsCount() : 0;
         int currentShares = post.getShares() != null ? post.getShares() : 0;
@@ -161,7 +244,6 @@ public class AnalyticsService {
         post.setShares(Math.max(currentShares, shares));
         post.setImpressions(Math.max(currentImpressions, impressions));
 
-        // ✅ 3. Calculate engagement (fallback if impressions = 0)
         int safeImpressions = post.getImpressions() > 0
                 ? post.getImpressions()
                 : (post.getLikes() + post.getCommentsCount() + post.getShares());
@@ -173,7 +255,31 @@ public class AnalyticsService {
 
         post.setEngagementScore(engagement);
 
-        // ✅ 4. Save post
         postRepository.save(post);
+    }
+
+    // ================= HELPERS =================
+
+    private LocalDateTime parseFacebookDate(String date){
+        try {
+            return LocalDateTime.parse(date.substring(0,19));
+        } catch (Exception e){
+            return LocalDateTime.now();
+        }
+    }
+
+    private String analyzeSentiment(String content){
+
+        content = content.toLowerCase();
+
+        if(content.contains("good") || content.contains("great") || content.contains("love")){
+            return "POSITIVE";
+        }
+
+        if(content.contains("bad") || content.contains("hate")){
+            return "NEGATIVE";
+        }
+
+        return "NEUTRAL";
     }
 }

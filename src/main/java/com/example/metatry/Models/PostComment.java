@@ -17,6 +17,8 @@ public class PostComment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String externalCommentId; // ✅ IMPORTANT (Facebook comment ID)
+
     private String commentText;
 
     private String sentiment; // POSITIVE / NEGATIVE / NEUTRAL
@@ -26,5 +28,6 @@ public class PostComment {
     private LocalDateTime createdAt;
 
     @ManyToOne
+    @JoinColumn(name = "post_id")
     private Post post;
 }
