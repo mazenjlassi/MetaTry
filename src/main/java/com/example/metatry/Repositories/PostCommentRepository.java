@@ -13,5 +13,7 @@ public interface PostCommentRepository extends JpaRepository<PostComment, Long> 
 
     List<PostComment> findByPostId(Long postId);
 
+    List<PostComment> findByPostCampaignId(Long campaignId);
+
 
 }

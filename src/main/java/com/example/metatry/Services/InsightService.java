@@ -23,49 +23,7 @@ public class InsightService {
             return emptyInsight();
         }
 
-        int total = comments.size();
-
-        long positive = comments.stream().filter(c -> "POSITIVE".equals(c.getSentiment())).count();
-        long negative = comments.stream().filter(c -> "NEGATIVE".equals(c.getSentiment())).count();
-        long neutral  = comments.stream().filter(c -> "NEUTRAL".equals(c.getSentiment())).count();
-
-        double posRatio = (double) positive / total;
-        double negRatio = (double) negative / total;
-        double neuRatio = (double) neutral  / total;
-
-        String overall = getOverallSentiment(posRatio, negRatio, neuRatio);
-
-        List<String> positives = extractKeywords(
-                comments.stream()
-                        .filter(c -> "POSITIVE".equals(c.getSentiment()))
-                        .map(PostComment::getCommentText)
-                        .toList()
-        );
-
-        List<String> negatives = extractKeywords(
-                comments.stream()
-                        .filter(c -> "NEGATIVE".equals(c.getSentiment()))
-                        .map(PostComment::getCommentText)
-                        .toList()
-        );
-
-        String summary = buildSummary(overall, positives, negatives);
-
-        // 🔥 NEW
-        String advice = generateAdvice(overall, positives, negatives);
-        List<String> ideas = generateIdeas(overall, positives, negatives);
-
-        return PostInsightDTO.builder()
-                .overallSentiment(overall)
-                .positiveRatio(posRatio)
-                .negativeRatio(negRatio)
-                .neutralRatio(neuRatio)
-                .topPositives(positives)
-                .topComplaints(negatives)
-                .summary(summary)
-                .advice(advice)      // ✅ NEW
-                .ideas(ideas)        // ✅ NEW
-                .build();
+        return buildInsightFromComments(comments);
     }
 
     private String getOverallSentiment(double pos, double neg, double neu){
@@ -162,6 +120,62 @@ public class InsightService {
                 .summary("No comments available")
                 .advice("No data available yet")
                 .ideas(List.of("Start engaging your audience to collect feedback"))
+                .build();
+    }
+
+
+    public PostInsightDTO generateCampaignInsights(Long campaignId){
+
+        List<PostComment> comments = commentRepository.findByPostCampaignId(campaignId);
+
+        if(comments.isEmpty()){
+            return emptyInsight();
+        }
+
+        return buildInsightFromComments(comments);
+    }
+    private PostInsightDTO buildInsightFromComments(List<PostComment> comments){
+
+        int total = comments.size();
+
+        long positive = comments.stream().filter(c -> "POSITIVE".equals(c.getSentiment())).count();
+        long negative = comments.stream().filter(c -> "NEGATIVE".equals(c.getSentiment())).count();
+        long neutral  = comments.stream().filter(c -> "NEUTRAL".equals(c.getSentiment())).count();
+
+        double posRatio = (double) positive / total;
+        double negRatio = (double) negative / total;
+        double neuRatio = (double) neutral  / total;
+
+        String overall = getOverallSentiment(posRatio, negRatio, neuRatio);
+
+        List<String> positives = extractKeywords(
+                comments.stream()
+                        .filter(c -> "POSITIVE".equals(c.getSentiment()))
+                        .map(PostComment::getCommentText)
+                        .toList()
+        );
+
+        List<String> negatives = extractKeywords(
+                comments.stream()
+                        .filter(c -> "NEGATIVE".equals(c.getSentiment()))
+                        .map(PostComment::getCommentText)
+                        .toList()
+        );
+
+        String summary = buildSummary(overall, positives, negatives);
+        String advice = generateAdvice(overall, positives, negatives);
+        List<String> ideas = generateIdeas(overall, positives, negatives);
+
+        return PostInsightDTO.builder()
+                .overallSentiment(overall)
+                .positiveRatio(posRatio)
+                .negativeRatio(negRatio)
+                .neutralRatio(neuRatio)
+                .topPositives(positives)
+                .topComplaints(negatives)
+                .summary(summary)
+                .advice(advice)
+                .ideas(ideas)
                 .build();
     }
 }

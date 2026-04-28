@@ -16,4 +16,9 @@ public class InsightController {
     public PostInsightDTO getPostInsights(@PathVariable Long postId){
         return insightService.generatePostInsights(postId);
     }
+
+    @GetMapping("/campaign/{campaignId}")
+    public PostInsightDTO getCampaignInsights(@PathVariable Long campaignId){
+        return insightService.generateCampaignInsights(campaignId);
+    }
 }
