@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class PromptBuilderService {
 
-    public String buildPrompt(String topic){
+    public String buildPrompt(String topic, String insights){
 
         return """
 You are an expert social media marketing strategist.
@@ -16,8 +16,26 @@ Create three DIFFERENT high-performing marketing posts for:
 2. Instagram → short, catchy, emoji-driven
 3. Facebook → conversational, engaging, community-driven
 
-Topic:
+========================
+TOPIC:
 """ + topic + """
+
+========================
+AUDIENCE INSIGHTS:
+""" + insights + """
+
+========================
+INSTRUCTIONS:
+
+- Adapt content based on audience feedback
+- Reinforce what users liked
+- Fix what users complained about
+- Improve engagement, clarity, and tone
+- If feedback is positive → replicate style
+- If feedback is negative → correct issues
+
+========================
+CONTENT REQUIREMENTS:
 
 Each platform must have:
 - a compelling TITLE
@@ -34,9 +52,10 @@ Rules:
 - Make posts feel natural and human-written
 - Include call-to-action when relevant
 
-Return ONLY valid JSON.
+========================
+OUTPUT FORMAT:
 
-JSON format:
+Return ONLY valid JSON.
 
 {
  "linkedinTitle": "...",

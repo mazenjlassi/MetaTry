@@ -19,4 +19,6 @@ public class PostInsightDTO {
     private List<String> topPositives;
 
     private String summary;
+    private String advice;
+    private List<String> ideas;
 }

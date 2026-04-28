@@ -51,6 +51,10 @@ public class InsightService {
 
         String summary = buildSummary(overall, positives, negatives);
 
+        // 🔥 NEW
+        String advice = generateAdvice(overall, positives, negatives);
+        List<String> ideas = generateIdeas(overall, positives, negatives);
+
         return PostInsightDTO.builder()
                 .overallSentiment(overall)
                 .positiveRatio(posRatio)
@@ -59,6 +63,8 @@ public class InsightService {
                 .topPositives(positives)
                 .topComplaints(negatives)
                 .summary(summary)
+                .advice(advice)      // ✅ NEW
+                .ideas(ideas)        // ✅ NEW
                 .build();
     }
 
@@ -68,15 +74,20 @@ public class InsightService {
         return "NEUTRAL";
     }
 
+    // 🔥 Improved keyword extraction
     private List<String> extractKeywords(List<String> texts){
 
         Map<String, Integer> freq = new HashMap<>();
+
+        List<String> stopWords = List.of(
+                "good","great","nice","cool","love","very","this","that","with","have"
+        );
 
         for(String text : texts){
             String[] words = text.toLowerCase().split("\\W+");
 
             for(String word : words){
-                if(word.length() < 4) continue;
+                if(word.length() < 4 || stopWords.contains(word)) continue;
 
                 freq.put(word, freq.getOrDefault(word, 0) + 1);
             }
@@ -96,6 +107,50 @@ public class InsightService {
                 ". Complaints: " + negatives;
     }
 
+    // 🔥 NEW: Advice logic
+    private String generateAdvice(String overall, List<String> positives, List<String> negatives){
+
+        if("NEGATIVE".equals(overall)){
+            return "Content needs improvement. Focus on clarity, shorter posts, and a more engaging tone.";
+        }
+
+        if("NEUTRAL".equals(overall)){
+            return "Content is average. Add stronger hooks, questions, or emotional triggers to increase engagement.";
+        }
+
+        if(!negatives.isEmpty()){
+            return "Content performs well but can be improved. Address these issues: " + negatives;
+        }
+
+        return "Content performs very well. Keep the same style and engagement strategy.";
+    }
+
+    // 🔥 NEW: Ideas generator
+    private List<String> generateIdeas(String overall, List<String> positives, List<String> negatives){
+
+        List<String> ideas = new ArrayList<>();
+
+        if("NEGATIVE".equals(overall)){
+            ideas.add("Use shorter and clearer sentences");
+            ideas.add("Add a strong hook at the beginning");
+            ideas.add("Make posts more conversational");
+        }
+
+        if("NEUTRAL".equals(overall)){
+            ideas.add("Add a question at the end of posts");
+            ideas.add("Use emojis to increase engagement");
+            ideas.add("Try storytelling format");
+        }
+
+        if("POSITIVE".equals(overall)){
+            ideas.add("Reuse this content style");
+            ideas.add("Create similar posts with variations");
+            ideas.add("Expand this topic into a campaign");
+        }
+
+        return ideas;
+    }
+
     private PostInsightDTO emptyInsight(){
         return PostInsightDTO.builder()
                 .overallSentiment("NEUTRAL")
@@ -105,6 +160,8 @@ public class InsightService {
                 .topComplaints(List.of())
                 .topPositives(List.of())
                 .summary("No comments available")
+                .advice("No data available yet")
+                .ideas(List.of("Start engaging your audience to collect feedback"))
                 .build();
     }
 }
