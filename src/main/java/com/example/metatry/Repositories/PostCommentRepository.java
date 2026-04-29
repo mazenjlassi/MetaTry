@@ -7,13 +7,13 @@ import java.util.List;
 
 public interface PostCommentRepository extends JpaRepository<PostComment, Long> {
 
-    boolean existsByExternalCommentId(String externalCommentId);
-
-    Long countByPostId(Long postId);
-
     List<PostComment> findByPostId(Long postId);
 
     List<PostComment> findByPostCampaignId(Long campaignId);
 
+    List<PostComment> findByPostIdAndSentiment(Long postId, String sentiment);
 
+    long countByPostId(Long postId); // 🔥 FIX
+
+    boolean existsByExternalCommentId(String externalCommentId);
 }
