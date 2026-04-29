@@ -12,13 +12,9 @@ public class InsightController {
 
     private final InsightService insightService;
 
-    @GetMapping("/post/{postId}")
-    public PostInsightDTO getPostInsights(@PathVariable Long postId){
-        return insightService.generatePostInsights(postId);
-    }
-
+    //  Campaign AI Insight
     @GetMapping("/campaign/{campaignId}")
-    public PostInsightDTO getCampaignInsights(@PathVariable Long campaignId){
+    public PostInsightDTO getCampaignInsights(@PathVariable Long campaignId) {
         return insightService.generateCampaignInsights(campaignId);
     }
 }

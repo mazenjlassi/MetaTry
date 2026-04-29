@@ -1,6 +1,5 @@
 package com.example.metatry.Services;
 
-import com.example.metatry.Config.GeminiConfig;
 import com.example.metatry.DTOs.AiGeneratedContent;
 import com.example.metatry.Enums.ImageSize;
 import com.example.metatry.Enums.PlatformType;
@@ -12,27 +11,25 @@ import com.example.metatry.Repositories.PostImageRepository;
 import com.example.metatry.Repositories.PostRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class AiContentService {
 
-    private final GeminiConfig geminiConfig;
     private final PromptBuilderService promptBuilderService;
+    private final GeminiService geminiService;
 
     private final PostRepository postRepository;
     private final PostImageRepository postImageRepository;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
-    // 🔥 MAIN ENTRY (used by CampaignService)
+    // ================= MAIN ENTRY =================
+
     public List<Post> generatePostsWithCampaign(
             String topic,
             int postNumber,
@@ -49,51 +46,20 @@ public class AiContentService {
         return allPosts;
     }
 
-    // 🔥 GENERATE ONE BATCH (3 posts)
+    // ================= GENERATE ONE BATCH =================
+
     private List<Post> generateSingleBatch(String topic, Campaign campaign) {
 
         try {
 
-            String prompt = promptBuilderService.buildPrompt(topic);
+            // No insights yet at generation stage
+            String prompt = promptBuilderService.buildPrompt(topic, "");
 
-            RestTemplate restTemplate = new RestTemplate();
-
-            String url =
-                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="
-                            + geminiConfig.getApiKey();
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            Map<String, Object> requestBody = Map.of(
-                    "contents", List.of(
-                            Map.of(
-                                    "parts", List.of(
-                                            Map.of("text", prompt)
-                                    )
-                            )
-                    )
-            );
-
-            HttpEntity<Map<String, Object>> request =
-                    new HttpEntity<>(requestBody, headers);
-
-            ResponseEntity<Map> response =
-                    restTemplate.exchange(url, HttpMethod.POST, request, Map.class);
-
-            List candidates = (List) response.getBody().get("candidates");
-            Map candidate = (Map) candidates.get(0);
-            Map content = (Map) candidate.get("content");
-            List parts = (List) content.get("parts");
-            Map part = (Map) parts.get(0);
-
-            String aiText = (String) part.get("text");
-            aiText = cleanJson(aiText);
+            String aiText = geminiService.generate(prompt);
 
             AiGeneratedContent aiContent =
                     objectMapper.readValue(aiText, AiGeneratedContent.class);
 
-            // 🔥 CREATE POSTS (FIXED ORDER)
             List<Post> postsToSave = new ArrayList<>();
 
             postsToSave.add(createPost(
@@ -148,6 +114,7 @@ public class AiContentService {
         }
     }
 
+    // ================= CREATE POST =================
 
     private Post createPost(
             String title,
@@ -169,11 +136,5 @@ public class AiContentService {
                 .permanent(false)
                 .link("https://3lm-solutions2.odoo.com/contactus")
                 .build();
-    }
-
-    private String cleanJson(String text) {
-        text = text.replace("```json", "");
-        text = text.replace("```", "");
-        return text.trim();
     }
 }
