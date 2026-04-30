@@ -48,10 +48,18 @@ public class CampaignService {
                 .toList();
     }
 
-    // 📊 Get one campaign
-    public Campaign getCampaign(Long id) {
-        return campaignRepository.findById(id)
+    // Get one campaign
+    public CampaignDTO getCampaignDTO(Long id) {
+
+        Campaign c = campaignRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Campaign not found"));
+
+        return new CampaignDTO(
+                c.getId(),
+                c.getName(),
+                c.getTopic(),
+                c.getPosts() != null ? c.getPosts().size() : 0
+        );
     }
 
     // ❌ Delete campaign

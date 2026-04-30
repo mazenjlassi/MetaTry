@@ -8,7 +8,10 @@ import java.util.List;
 
 public interface CampaignRepository extends JpaRepository<Campaign, Long> {
 
+    // ✅ Get campaigns sorted by newest first
     List<Campaign> findAllByOrderByCreatedAtDesc();
-    @Query("SELECT c FROM Campaign c LEFT JOIN FETCH c.posts")
+
+    // ✅ Fetch campaigns with posts (avoid N+1)
+    @Query("SELECT DISTINCT c FROM Campaign c LEFT JOIN FETCH c.posts")
     List<Campaign> findAllWithPosts();
 }

@@ -1,9 +1,6 @@
 package com.example.metatry.Services;
 
-import com.example.metatry.DTOs.CreatePostRequest;
-import com.example.metatry.DTOs.PostDto;
-import com.example.metatry.DTOs.PostStatsResponse;
-import com.example.metatry.DTOs.UpdatePostRequest;
+import com.example.metatry.DTOs.*;
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Enums.PostStatus;
 import com.example.metatry.Models.Campaign;
@@ -268,6 +265,27 @@ public class PostService {
     //  Campaign + Status
     public List<Post> getCampaignPostsByStatus(Long campaignId, PostStatus status) {
         return postRepository.findByCampaignIdAndStatus(campaignId, status);
+    }
+
+    // ================= POSTS SUMMARY (NEW - DO NOT TOUCH EXISTING METHODS) =================
+
+    public List<PostSummaryDTO> getPostSummariesByCampaign(Long campaignId) {
+        return postRepository.findByCampaignId(campaignId)
+                .stream()
+                .map(this::mapToSummaryDTO)
+                .toList();
+    }
+
+    private PostSummaryDTO mapToSummaryDTO(Post post) {
+        return PostSummaryDTO.builder()
+                .id(post.getId())
+                .title(post.getTitle())
+                .platform(post.getPlatform() != null ? post.getPlatform().name() : null)
+                .status(post.getStatus().name())
+                .likes(post.getLikes())
+                .commentsCount(post.getCommentsCount())
+                .shares(post.getShares())
+                .build();
     }
 
 
