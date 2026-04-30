@@ -1,6 +1,7 @@
 package com.example.metatry.Services;
 
 import com.example.metatry.DTOs.CreateCampaignRequest;
+import com.example.metatry.DTOs.CampaignDTO;
 import com.example.metatry.Models.Campaign;
 import com.example.metatry.Models.Post;
 import com.example.metatry.Repositories.CampaignRepository;
@@ -35,9 +36,16 @@ public class CampaignService {
         );
     }
 
-    // 📊 Get all campaigns
-    public List<Campaign> getAllCampaigns() {
-        return campaignRepository.findAllByOrderByCreatedAtDesc();
+    //  Get all campaigns
+    public List<CampaignDTO> getAllCampaigns() {
+        return campaignRepository.findAllWithPosts().stream()
+                .map(c -> new CampaignDTO(
+                        c.getId(),
+                        c.getName(),
+                        c.getTopic(), // 🔥 use topic instead of description
+                        c.getPosts() != null ? c.getPosts().size() : 0
+                ))
+                .toList();
     }
 
     // 📊 Get one campaign

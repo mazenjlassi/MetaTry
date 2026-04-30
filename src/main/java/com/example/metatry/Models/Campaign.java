@@ -23,6 +23,7 @@ public class Campaign {
 
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<Post> posts = new ArrayList<>();
 }

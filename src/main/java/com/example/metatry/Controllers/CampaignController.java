@@ -1,5 +1,6 @@
 package com.example.metatry.Controllers;
 
+import com.example.metatry.DTOs.CampaignDTO;
 import com.example.metatry.DTOs.CreateCampaignRequest;
 import com.example.metatry.Models.Campaign;
 import com.example.metatry.Models.Post;
@@ -26,7 +27,7 @@ public class CampaignController {
 
     // 📊 Get all campaigns
     @GetMapping
-    public List<Campaign> getAllCampaigns() {
+    public List<CampaignDTO> getAllCampaigns() {
         return campaignService.getAllCampaigns();
     }
 
