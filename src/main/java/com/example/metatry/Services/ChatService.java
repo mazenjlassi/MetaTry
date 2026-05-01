@@ -1,0 +1,145 @@
+package com.example.metatry.Services;
+
+import com.example.metatry.DTOs.*;
+import com.example.metatry.Enums.MessageRole;
+import com.example.metatry.Models.Conversation;
+import com.example.metatry.Models.Message;
+import com.example.metatry.Repositories.ConversationRepository;
+import com.example.metatry.Repositories.MessageRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class ChatService {
+
+    private final ConversationRepository conversationRepository;
+    private final MessageRepository messageRepository;
+    private final GeminiService geminiService;
+
+    // ================= MAPPERS =================
+
+    private ConversationDTO mapConversation(Conversation c) {
+        return ConversationDTO.builder()
+                .id(c.getId())
+                .title(c.getTitle())
+                .conclusion(c.getConclusion())
+                .createdAt(c.getCreatedAt())
+                .build();
+    }
+
+    private MessageDTO mapMessage(Message m) {
+        return MessageDTO.builder()
+                .id(m.getId())
+                .role(m.getRole().name())
+                .content(m.getContent())
+                .timestamp(m.getTimestamp())
+                .build();
+    }
+
+    // ================= CONVERSATIONS =================
+
+    public ConversationDTO createConversation(String title) {
+        Conversation c = Conversation.builder()
+                .title(title)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        return mapConversation(conversationRepository.save(c));
+    }
+
+    public List<ConversationDTO> getAllConversations() {
+        return conversationRepository.findAll()
+                .stream()
+                .map(this::mapConversation)
+                .toList();
+    }
+
+    public ConversationDTO getConversation(Long id) {
+        return conversationRepository.findById(id)
+                .map(this::mapConversation)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+    }
+
+    public void deleteConversation(Long id) {
+        conversationRepository.deleteById(id);
+    }
+
+    // ================= MESSAGES =================
+
+    public List<MessageDTO> getMessages(Long conversationId) {
+        return messageRepository
+                .findByConversationIdOrderByTimestampAsc(conversationId)
+                .stream()
+                .map(this::mapMessage)
+                .toList();
+    }
+
+    public MessageDTO sendMessage(Long conversationId, String userMessage) {
+
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        // 1. Save user message
+        Message user = Message.builder()
+                .role(MessageRole.USER)
+                .content(userMessage)
+                .timestamp(LocalDateTime.now())
+                .conversation(conversation)
+                .build();
+
+        messageRepository.save(user);
+
+        // 2. Get history
+        List<Message> history = messageRepository
+                .findByConversationIdOrderByTimestampAsc(conversationId);
+
+        List<String> messages = history.stream()
+                .map(m -> m.getRole() + ": " + m.getContent())
+                .toList();
+
+        // 3. Call AI
+        String prompt = "Continue this conversation:\n" + String.join("\n", messages);
+        String aiResponse = geminiService.generate(prompt);
+
+        // 4. Save AI response
+        Message ai = Message.builder()
+                .role(MessageRole.AI)
+                .content(aiResponse)
+                .timestamp(LocalDateTime.now())
+                .conversation(conversation)
+                .build();
+
+        return mapMessage(messageRepository.save(ai));
+    }
+
+    // ================= CONCLUSION =================
+
+    public String generateConclusion(Long conversationId) {
+
+        List<Message> history = messageRepository
+                .findByConversationIdOrderByTimestampAsc(conversationId);
+
+        List<String> texts = history.stream()
+                .map(Message::getContent)
+                .toList();
+
+        String prompt = """
+Summarize this discussion into a clear actionable conclusion (2-3 sentences):
+
+""" + String.join("\n", texts);
+
+        String result = geminiService.generate(prompt);
+
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow();
+
+        conversation.setConclusion(result);
+        conversationRepository.save(conversation);
+
+        return result;
+    }
+}
