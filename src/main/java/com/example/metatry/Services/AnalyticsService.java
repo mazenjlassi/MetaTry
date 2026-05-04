@@ -39,7 +39,7 @@ public class AnalyticsService {
 
     public void collectMetricsForPublishedPosts(){
 
-        List<Post> posts = postService.getPublishedPosts();
+        List<Post> posts = postService.getLastPublishedPosts(20);
 
         for(Post post : posts){
 

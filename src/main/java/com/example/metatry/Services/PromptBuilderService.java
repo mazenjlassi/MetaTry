@@ -5,72 +5,100 @@ import org.springframework.stereotype.Service;
 @Service
 public class PromptBuilderService {
 
-    public String buildPrompt(String topic, String insights){
+    public String buildPrompt(String topic, String insights, String conclusion){
 
         return """
-You are an expert social media marketing strategist.
+You are a senior IT marketing strategist.
 
-Create three DIFFERENT high-performing marketing posts for:
-
-1. LinkedIn → professional, storytelling, authority
-2. Instagram → short, catchy, emoji-driven
-3. Facebook → conversational, engaging, community-driven
+Your goal is to generate HIGH-PERFORMANCE social media posts for tech products.
 
 ========================
+INPUT DATA
+
 TOPIC:
 """ + topic + """
 
-========================
-AUDIENCE INSIGHTS:
+INSIGHTS (from user feedback):
 """ + insights + """
 
-========================
-INSTRUCTIONS:
-
-- Adapt content based on audience feedback
-- Reinforce what users liked
-- Fix what users complained about
-- Improve engagement, clarity, and tone
-- If feedback is positive → replicate style
-- If feedback is negative → correct issues
+CONVERSATION STRATEGY:
+""" + conclusion + """
 
 ========================
-CONTENT REQUIREMENTS:
+STRATEGY RULES
 
-Each platform must have:
-- a compelling TITLE
-- optimized content
-- relevant hashtags
-
-Rules:
-- LinkedIn: max 1200 characters
-- Instagram: max 220 characters
-- Facebook: max 500 characters
-
-- Titles must be short, engaging, and platform-adapted
-- Do NOT repeat the same content across platforms
-- Make posts feel natural and human-written
-- Include call-to-action when relevant
+- Stay STRICTLY in IT / tech domain
+- Use insights to:
+  - amplify what users like
+  - fix complaints
+- Use conversation strategy as:
+  - direction for tone
+  - messaging focus
+  - positioning
 
 ========================
-OUTPUT FORMAT:
+WRITING STYLE
 
-Return ONLY valid JSON.
+- Clear, concise, high-impact
+- No long paragraphs
+- Use strong hooks
+- Add call-to-action when relevant
+- Human tone, not robotic
+
+========================
+PLATFORM RULES
+
+1. LinkedIn
+- professional
+- authority tone
+- storytelling allowed
+- max 1200 characters
+
+2. Instagram
+- very short
+- catchy
+- emoji allowed
+- max 220 characters
+
+3. Facebook
+- conversational
+- engaging
+- community tone
+- max 500 characters
+
+========================
+CONTENT STRUCTURE
+
+Each platform must include:
+- TITLE (short and impactful)
+- CONTENT (optimized)
+- HASHTAGS (relevant)
+
+========================
+OUTPUT RULES
+
+- DO NOT repeat content across platforms
+- DO NOT explain anything
+- DO NOT add extra text
+- RETURN ONLY VALID JSON
+
+========================
+OUTPUT FORMAT
 
 {
  "linkedinTitle": "...",
  "linkedinPost": "...",
- "linkedinHashtags": ["AI","Automation"],
+ "linkedinHashtags": ["..."],
 
  "instagramTitle": "...",
  "instagramPost": "...",
- "instagramHashtags": ["AI","Startup"],
+ "instagramHashtags": ["..."],
 
  "facebookTitle": "...",
  "facebookPost": "...",
- "facebookHashtags": ["AI","Business"],
+ "facebookHashtags": ["..."],
 
- "imagePrompt": "A professional marketing visual related to the topic"
+ "imagePrompt": "short, clear, IT-related visual description"
 }
 """;
     }

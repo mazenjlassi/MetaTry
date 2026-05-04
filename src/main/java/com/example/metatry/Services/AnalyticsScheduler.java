@@ -10,10 +10,13 @@ public class AnalyticsScheduler {
 
     private final AnalyticsService analyticsService;
 
-
     @Scheduled(fixedRate = 6 * 60 * 60 * 1000)
-    public void collectAnalytics() {
+    public synchronized void collectAnalytics() {
+
         System.out.println("Running scheduled analytics...");
+
         analyticsService.collectMetricsForPublishedPosts();
+
+        System.out.println("Analytics finished.");
     }
 }

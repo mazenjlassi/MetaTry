@@ -33,13 +33,24 @@ public class AiContentService {
     public List<Post> generatePostsWithCampaign(
             String topic,
             int postNumber,
-            Campaign campaign
+            Campaign campaign,
+            String insights,
+            String conclusion
     ) {
+
+        // ✅ SAFE FALLBACKS
+        String safeInsights = (insights == null || insights.isBlank())
+                ? "No insights available"
+                : insights;
+
+        String safeConclusion = (conclusion == null || conclusion.isBlank())
+                ? "Focus on engagement, clarity, and value"
+                : conclusion;
 
         List<Post> allPosts = new ArrayList<>();
 
         for (int i = 0; i < postNumber; i++) {
-            List<Post> batch = generateSingleBatch(topic, campaign);
+            List<Post> batch = generateSingleBatch(topic, campaign, safeInsights, safeConclusion);
             allPosts.addAll(batch);
         }
 
@@ -48,12 +59,17 @@ public class AiContentService {
 
     // ================= GENERATE ONE BATCH =================
 
-    private List<Post> generateSingleBatch(String topic, Campaign campaign) {
+    private List<Post> generateSingleBatch(
+            String topic,
+            Campaign campaign,
+            String insights,
+            String conclusion
+    ) {
 
         try {
 
-            // No insights yet at generation stage
-            String prompt = promptBuilderService.buildPrompt(topic, "");
+            // 🔥 NEW PROMPT (INSIGHTS + STRATEGY)
+            String prompt = promptBuilderService.buildPrompt(topic, insights, conclusion);
 
             String aiText = geminiService.generate(prompt);
 
@@ -88,7 +104,8 @@ public class AiContentService {
 
             List<Post> savedPosts = postRepository.saveAll(postsToSave);
 
-            // 🔥 CREATE IMAGES
+            // ================= IMAGES =================
+
             for (Post post : savedPosts) {
 
                 ImageSize size = switch (post.getPlatform()) {
@@ -127,7 +144,7 @@ public class AiContentService {
         return Post.builder()
                 .title(title)
                 .content(content)
-                .hashtags(String.join(",", hashtags))
+                .hashtags(hashtags != null ? String.join(",", hashtags) : "")
                 .platform(platform)
                 .generatedByAI(true)
                 .approved(false)

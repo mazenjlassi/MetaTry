@@ -11,6 +11,7 @@ import com.example.metatry.Repositories.PostImageRepository;
 import com.example.metatry.Repositories.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -24,6 +25,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final PostImageRepository postImageRepository;
     private final CampaignRepository campaignRepository;
+    private  final CloudinaryService cloudinaryService;
 
     public List<Post> getAllPosts(){
         return postRepository.findAll();
@@ -121,8 +123,11 @@ public class PostService {
     }
 
     // =================  CREATE MANUALLY =================
-
-    public Post createPostForCampaign(Long campaignId, CreatePostRequest request) {
+    public Post createPostForCampaign(
+            Long campaignId,
+            CreatePostRequest request,
+            MultipartFile file
+    ) {
 
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Campaign not found"));
@@ -135,21 +140,28 @@ public class PostService {
         post.setPlatform(request.getPlatform());
 
         post.setGeneratedByAI(false);
-        post.setApproved(true); // or false if you want manual approval
+        post.setApproved(true);
 
         post.setStatus(PostStatus.SCHEDULED);
         post.setScheduledAt(request.getScheduledAt());
 
-        post.setPermanent(request.isPermanent()); // ✅ keep your logic
+        post.setPermanent(request.isPermanent());
+        post.setCampaign(campaign);
 
-        post.setCampaign(campaign); // ✅ VERY IMPORTANT
+        // 🔥 USE YOUR CLOUDINARY SERVICE
+        if (file != null && !file.isEmpty()) {
+            try {
+                String imageUrl = cloudinaryService.uploadImage(file);
 
-        // image
-        if (request.getImageUrl() != null) {
-            PostImage image = new PostImage();
-            image.setImageUrl(request.getImageUrl());
-            image.setPost(post); // bidirectional
-            post.setImage(image);
+                PostImage image = new PostImage();
+                image.setImageUrl(imageUrl);
+                image.setPost(post);
+
+                post.setImage(image);
+
+            } catch (Exception e) {
+                throw new RuntimeException("Image upload failed: " + e.getMessage());
+            }
         }
 
         return postRepository.save(post);
@@ -286,6 +298,10 @@ public class PostService {
                 .commentsCount(post.getCommentsCount())
                 .shares(post.getShares())
                 .build();
+    }
+
+    public List<Post> getLastPublishedPosts(int limit) {
+        return postRepository.findTop20ByStatusOrderByPublishedAtDesc(PostStatus.PUBLISHED);
     }
 
 

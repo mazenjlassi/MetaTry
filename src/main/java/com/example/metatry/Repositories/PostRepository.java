@@ -49,6 +49,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     //  Combined (VERY USEFUL)
     List<Post> findByCampaignIdAndStatus(Long campaignId, PostStatus status);
 
+    List<Post> findTop20ByStatusOrderByPublishedAtDesc(PostStatus status);
+
 
 
 

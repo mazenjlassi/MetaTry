@@ -13,15 +13,12 @@ public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
 
-    /**
-     * 🔄 Trigger metrics collection (used by n8n)
-     */
     @PostMapping("/collect")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<String> collectMetrics(){
 
         analyticsService.collectMetricsForPublishedPosts();
 
-        return ResponseEntity.ok("Metrics collected successfully");
+        return ResponseEntity.ok("Metrics collected !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     }
 }

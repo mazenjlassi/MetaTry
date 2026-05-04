@@ -43,8 +43,9 @@ public class ChatService {
     // ================= CONVERSATIONS =================
 
     public ConversationDTO createConversation(String title) {
+
         Conversation c = Conversation.builder()
-                .title(title)
+                .title(title == null || title.isBlank() ? "New Chat" : title)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -93,6 +94,40 @@ public class ChatService {
 
         messageRepository.save(user);
 
+        // 🔥 AUTO TITLE (FIRST MESSAGE ONLY)
+        if (conversation.getTitle() == null ||
+                conversation.getTitle().trim().equalsIgnoreCase("new chat")) {
+
+            try {
+                String titlePrompt = """
+Generate a short (3-5 words) technical title.
+Must be specific and IT-related.
+No generic names like "New Chat".
+No quotes.
+
+Message:
+""" + userMessage;
+
+                String generatedTitle = geminiService.generate(titlePrompt);
+
+                if (generatedTitle != null && !generatedTitle.isBlank()) {
+
+                    generatedTitle = generatedTitle.trim();
+
+                    // Limit length
+                    if (generatedTitle.length() > 50) {
+                        generatedTitle = generatedTitle.substring(0, 50);
+                    }
+
+                    conversation.setTitle(generatedTitle);
+                    conversationRepository.save(conversation);
+                }
+
+            } catch (Exception e) {
+                System.out.println("Title generation failed: " + e.getMessage());
+            }
+        }
+
         // 2. Get history
         List<Message> history = messageRepository
                 .findByConversationIdOrderByTimestampAsc(conversationId);
@@ -102,7 +137,19 @@ public class ChatService {
                 .toList();
 
         // 3. Call AI
-        String prompt = "Continue this conversation:\n" + String.join("\n", messages);
+        String prompt = """
+You are an IT expert assistant focused on software, systems, and digital products.
+
+Rules:
+- Answer ONLY in IT / tech domain
+- Be concise and structured
+- Use bullet points when possible
+- Avoid long paragraphs
+- Give practical and actionable answers
+- If question is not IT-related, redirect it to a tech perspective
+
+Conversation:
+""" + String.join("\n", messages);
         String aiResponse = geminiService.generate(prompt);
 
         // 4. Save AI response

@@ -2,11 +2,17 @@ package com.example.metatry.Services;
 
 import com.example.metatry.DTOs.CreateCampaignRequest;
 import com.example.metatry.DTOs.CampaignDTO;
+import com.example.metatry.DTOs.CreatePostRequest;
+import com.example.metatry.Enums.PostStatus;
 import com.example.metatry.Models.Campaign;
 import com.example.metatry.Models.Post;
+import com.example.metatry.Models.PostImage;
 import com.example.metatry.Repositories.CampaignRepository;
+import com.example.metatry.Repositories.PostRepository;
+import io.jsonwebtoken.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,40 +21,103 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CampaignService {
 
+    private final PostRepository postRepository;
     private final CampaignRepository campaignRepository;
     private final AiContentService aiContentService;
 
-    // 🔥 Create campaign + generate posts
+    private final CloudinaryService cloudinaryService;
+    private final InsightService insightService;
+    private final ChatService chatService;
+
+    // ================= CREATE CAMPAIGN =================
+
     public List<Post> createCampaignAndGeneratePosts(CreateCampaignRequest request) {
 
         Campaign campaign = Campaign.builder()
-                .name(request.getName())           // ✅ NEW
+                .name(request.getName())
                 .topic(request.getTopic())
                 .createdAt(LocalDateTime.now())
                 .build();
 
         campaignRepository.save(campaign);
 
+        //  GET INSIGHTS (can be empty for new campaigns)
+        String insights = "No insights yet";
+        try {
+            insights = insightService.generateCampaignInsights(campaign.getId()).getSummary();
+        } catch (Exception ignored) {}
+
+        //  GET CONVERSATION STRATEGY (if provided)
+        String conclusion = "Focus on engagement and clarity";
+        try {
+            if (request.getConversationId() != null) {
+                conclusion = chatService.generateConclusion(request.getConversationId());
+            }
+        } catch (Exception ignored) {}
+
+        //  GENERATE POSTS WITH FULL CONTEXT
         return aiContentService.generatePostsWithCampaign(
                 request.getTopic(),
                 request.getPostNumber(),
-                campaign
+                campaign,
+                insights,
+                conclusion
         );
     }
 
-    //  Get all campaigns
+    public Post createPostForCampaign(
+            Long campaignId,
+            CreatePostRequest request,
+            MultipartFile image
+    ) throws IOException, java.io.IOException {
+
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+
+        Post post = new Post();
+
+        post.setTitle(request.getTitle());
+        post.setContent(request.getContent());
+        post.setHashtags(request.getHashtags());
+        post.setPlatform(request.getPlatform());
+
+        post.setGeneratedByAI(false);
+        post.setApproved(true);
+        post.setStatus(PostStatus.SCHEDULED);
+        post.setScheduledAt(request.getScheduledAt());
+        post.setPermanent(request.isPermanent());
+
+        post.setCampaign(campaign);
+
+        // ✅ USE YOUR CLOUDINARY SERVICE HERE
+        if (image != null && !image.isEmpty()) {
+
+            String imageUrl = cloudinaryService.uploadImage(image);
+
+            PostImage postImage = new PostImage();
+            postImage.setImageUrl(imageUrl);
+            postImage.setPost(post);
+
+            post.setImage(postImage);
+        }
+
+        return postRepository.save(post);
+    }
+    // ================= GET ALL =================
+
     public List<CampaignDTO> getAllCampaigns() {
         return campaignRepository.findAllWithPosts().stream()
                 .map(c -> new CampaignDTO(
                         c.getId(),
                         c.getName(),
-                        c.getTopic(), // 🔥 use topic instead of description
+                        c.getTopic(),
                         c.getPosts() != null ? c.getPosts().size() : 0
                 ))
                 .toList();
     }
 
-    // Get one campaign
+    // ================= GET ONE =================
+
     public CampaignDTO getCampaignDTO(Long id) {
 
         Campaign c = campaignRepository.findById(id)
@@ -62,8 +131,28 @@ public class CampaignService {
         );
     }
 
-    // ❌ Delete campaign
+    // ================= DELETE =================
+
     public void deleteCampaign(Long id) {
         campaignRepository.deleteById(id);
+    }
+
+    public Campaign getCampaign(Long id) {
+        return campaignRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+    }
+
+    public List<Campaign> getAllCampaignsRaw() {
+        return campaignRepository.findAll();
+    }
+
+    public Campaign createManualCampaign(CreateCampaignRequest request) {
+
+        Campaign campaign = new Campaign();
+
+        campaign.setName(request.getName());
+        campaign.setTopic(request.getTopic());
+
+        return campaignRepository.save(campaign);
     }
 }
