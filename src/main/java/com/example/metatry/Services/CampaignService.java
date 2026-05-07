@@ -87,6 +87,12 @@ public class CampaignService {
         post.setScheduledAt(request.getScheduledAt());
         post.setPermanent(request.isPermanent());
 
+        String link = request.getLink();
+        if (link == null || link.isBlank()) {
+            link = "https://3lm-solutions2.odoo.com/contactus";
+        }
+        post.setLink(link);
+
         post.setCampaign(campaign);
 
         // ✅ USE YOUR CLOUDINARY SERVICE HERE

@@ -148,6 +148,12 @@ public class PostService {
         post.setPermanent(request.isPermanent());
         post.setCampaign(campaign);
 
+        String link = request.getLink();
+        if (link == null || link.isBlank()) {
+            link = "https://3lm-solutions2.odoo.com/contactus";
+        }
+        post.setLink(link);
+
         // 🔥 USE YOUR CLOUDINARY SERVICE
         if (file != null && !file.isEmpty()) {
             try {

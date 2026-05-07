@@ -19,4 +19,6 @@ public class CreatePostRequest {
     private LocalDateTime scheduledAt;
 
     private boolean permanent; // ✅ keep your business logic
+
+    private String link;
 }

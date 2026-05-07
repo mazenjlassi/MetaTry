@@ -57,7 +57,17 @@ public class SocialPublisherService {
     }
 
     private String buildCaption(Post post){
-        return post.getContent() + "\n\n" + post.getHashtags();
+        String caption = post.getContent();
+        
+        if (post.getLink() != null && !post.getLink().isBlank()) {
+            caption += "\n\n" + post.getLink();
+        }
+        
+        if (post.getHashtags() != null && !post.getHashtags().isBlank()) {
+            caption += "\n\n" + post.getHashtags();
+        }
+        
+        return caption;
     }
 
     /**
