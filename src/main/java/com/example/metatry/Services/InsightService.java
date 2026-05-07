@@ -102,6 +102,7 @@ public class InsightService {
                     .overallSentiment((String) map.getOrDefault("overallSentiment", "NEUTRAL"))
                     .topPositives(safeList(map.get("topPositives")))
                     .topComplaints(safeList(map.get("topComplaints")))
+                    .topNeutral(safeList(map.get("topNeutral")))
                     .summary((String) map.getOrDefault("summary", ""))
                     .advice((String) map.getOrDefault("advice", ""))
                     .ideas(safeList(map.get("ideas")))
@@ -151,9 +152,16 @@ public class InsightService {
                         .toList()
         );
 
-        String summary = buildSummary(overall, positives, negatives);
-        String advice = generateAdvice(overall, positives, negatives);
-        List<String> ideas = generateIdeas(overall, positives, negatives);
+        List<String> neutralKeywords = extractKeywords(
+                comments.stream()
+                        .filter(c -> "NEUTRAL".equals(c.getSentiment()))
+                        .map(PostComment::getCommentText)
+                        .toList()
+        );
+
+        String summary = buildSummary(overall, positives, negatives, neutralKeywords);
+        String advice = generateAdvice(overall, positives, negatives, neutralKeywords);
+        List<String> ideas = generateIdeas(overall, positives, negatives, neutralKeywords);
 
         return PostInsightDTO.builder()
                 .overallSentiment(overall)
@@ -162,6 +170,7 @@ public class InsightService {
                 .neutralRatio(neuRatio)
                 .topPositives(positives)
                 .topComplaints(negatives)
+                .topNeutral(neutralKeywords)
                 .summary(summary)
                 .advice(advice)
                 .ideas(ideas)
@@ -181,7 +190,11 @@ public class InsightService {
         Map<String, Integer> freq = new HashMap<>();
 
         List<String> stopWords = List.of(
-                "good","great","nice","cool","love","very","this","that","with","have"
+                "good","great","nice","cool","love","very","this","that","with","have",
+                "just","like","really","think","want","know","make","time","people",
+                "would","could","should","will","does","been","were","said","one",
+                "get","got","way","thing","things","see","look","need","feel","still",
+                "much","many","more","some","come","take","even","also","back","well"
         );
 
         for(String text : texts){
@@ -198,25 +211,29 @@ public class InsightService {
 
         return freq.entrySet().stream()
                 .sorted((a,b) -> b.getValue() - a.getValue())
-                .limit(5)
+                .limit(20)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
     }
 
-    private String buildSummary(String overall, List<String> positives, List<String> negatives){
+    private String buildSummary(String overall, List<String> positives, List<String> negatives, List<String> neutralKeywords){
 
         return "Overall sentiment is " + overall +
                 ". Users like: " + positives +
-                ". Complaints: " + negatives;
+                ". Complaints: " + negatives +
+                ". Neutral mentions: " + neutralKeywords;
     }
 
-    private String generateAdvice(String overall, List<String> positives, List<String> negatives){
+    private String generateAdvice(String overall, List<String> positives, List<String> negatives, List<String> neutralKeywords){
 
         if("NEGATIVE".equals(overall)){
             return "Content needs improvement. Focus on clarity, shorter posts, and a more engaging tone.";
         }
 
         if("NEUTRAL".equals(overall)){
+            if(!neutralKeywords.isEmpty()){
+                return "Content is neutral. Consider adding more engaging elements. Neutral topics: " + neutralKeywords;
+            }
             return "Content is average. Add stronger hooks, questions, or emotional triggers.";
         }
 
@@ -227,7 +244,7 @@ public class InsightService {
         return "Content performs very well. Keep the same style and engagement strategy.";
     }
 
-    private List<String> generateIdeas(String overall, List<String> positives, List<String> negatives){
+    private List<String> generateIdeas(String overall, List<String> positives, List<String> negatives, List<String> neutralKeywords){
 
         List<String> ideas = new ArrayList<>();
 
@@ -241,6 +258,9 @@ public class InsightService {
             ideas.add("Add questions");
             ideas.add("Use emojis");
             ideas.add("Try storytelling");
+            if(!neutralKeywords.isEmpty()){
+                ideas.add("Explore neutral topics: " + neutralKeywords);
+            }
         }
 
         if("POSITIVE".equals(overall)){
