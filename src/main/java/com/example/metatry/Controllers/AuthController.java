@@ -73,7 +73,9 @@ public class AuthController {
         String token = jwtService.generateToken(user);
 
         return Map.of(
-                "token", token
+                "token", token,
+                "role", user.getRole().name(),
+                "name", user.getName()
         );
     }
 }
