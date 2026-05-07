@@ -66,6 +66,10 @@ public class AuthController {
         User user = userRepository.findByName(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        if (Boolean.TRUE.equals(user.getBanned())) {
+            throw new RuntimeException("Account is banned");
+        }
+
         String token = jwtService.generateToken(user);
 
         return Map.of(

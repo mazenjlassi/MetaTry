@@ -56,4 +56,14 @@ public class AdminController {
         Role role = Role.valueOf(roleStr.toUpperCase());
         return adminService.updateUserRole(id, role);
     }
+
+    @PutMapping("/users/{id}/ban")
+    public User banUser(@PathVariable Long id) {
+        return adminService.banUser(id);
+    }
+
+    @PutMapping("/users/{id}/unban")
+    public User unbanUser(@PathVariable Long id) {
+        return adminService.unbanUser(id);
+    }
 }

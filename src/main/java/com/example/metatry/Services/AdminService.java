@@ -60,4 +60,24 @@ public class AdminService {
         user.setRole(role);
         return userRepository.save(user);
     }
+
+    public User banUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        if (user.getRole() == Role.ADMIN) {
+            throw new RuntimeException("Cannot ban admin user");
+        }
+
+        user.setBanned(true);
+        return userRepository.save(user);
+    }
+
+    public User unbanUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        user.setBanned(false);
+        return userRepository.save(user);
+    }
 }

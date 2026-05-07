@@ -21,6 +21,8 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    private Boolean banned = false;
+
     // Default constructor
     public User() {}
 
@@ -53,6 +55,10 @@ public class User {
         return role;
     }
 
+    public Boolean getBanned() {
+        return banned;
+    }
+
     // Setters
     public void setId(Long id) {
         this.id = id;
@@ -72,5 +78,9 @@ public class User {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public void setBanned(Boolean banned) {
+        this.banned = banned;
     }
 }
