@@ -14,7 +14,7 @@ public class AnalyticsController {
     private final AnalyticsService analyticsService;
 
     @PostMapping("/collect")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<String> collectMetrics(){
 
         analyticsService.collectMetricsForPublishedPosts();

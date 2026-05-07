@@ -16,7 +16,7 @@ public class PostPublishController {
     private final SocialPublisherService socialPublisherService;
 
     @PostMapping("/{postId}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public Post publishPost(@PathVariable Long postId){
 
         Post post = postRepository.findById(postId)

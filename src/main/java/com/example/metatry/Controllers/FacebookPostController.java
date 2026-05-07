@@ -19,6 +19,7 @@ public class FacebookPostController {
     private final FacebookService facebookService;
 
     @PostMapping("/post/text")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<?> postText(@RequestBody Map<String, String> request) {
 
         String message = request.get("message");
@@ -32,6 +33,7 @@ public class FacebookPostController {
     }
 
     @PostMapping("/post/url")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<?> postPhotoUrl(@RequestBody Map<String, String> request) {
 
         String imageUrl = request.get("imageUrl");
@@ -48,6 +50,7 @@ public class FacebookPostController {
     }
 
     @PostMapping(value = "/post/local", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<?> postLocal(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "caption", required = false) String caption) {

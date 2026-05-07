@@ -18,6 +18,7 @@ public class InstagramPostController {
     private final InstagramService instagramService;
 
     @PostMapping("/post/url")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<?> postUrl(@RequestBody Map<String, String> request) {
 
         String imageUrl = request.get("imageUrl");
@@ -34,6 +35,7 @@ public class InstagramPostController {
     }
 
     @PostMapping(value = "/post/local", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<?> postLocal(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "caption", required = false) String caption) {
@@ -54,6 +56,7 @@ public class InstagramPostController {
     }
 
     @GetMapping("/test")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<?> test() {
         return ResponseEntity.ok(Map.of(
                 "status", "OK",

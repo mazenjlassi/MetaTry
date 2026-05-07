@@ -11,6 +11,7 @@ import com.example.metatry.Services.PostService;
 import io.jsonwebtoken.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,12 +26,14 @@ public class CampaignController {
 
     // 🔥 AI GENERATION (KEEP)
     @PostMapping("/generate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public List<Post> generateCampaign(@RequestBody CreateCampaignRequest request) {
         return campaignService.createCampaignAndGeneratePosts(request);
     }
 
     // 🔥 NEW: MANUAL CAMPAIGN
     @PostMapping("/{campaignId}/posts/with-image")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public Post createPostWithImage(
             @PathVariable Long campaignId,
             @RequestPart("data") CreatePostRequest request,
@@ -42,23 +45,27 @@ public class CampaignController {
 
     // 📊 Get all campaigns
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public List<CampaignDTO> getAllCampaigns() {
         return campaignService.getAllCampaigns();
     }
     // 📊 Get one campaign
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public Campaign getCampaign(@PathVariable Long id) {
         return campaignService.getCampaign(id);
     }
 
     // 📊 Get posts by campaign
     @GetMapping("/{campaignId}/posts")
+    @PreAuthorize("isAuthenticated()")
     public List<Post> getPostsByCampaign(@PathVariable Long campaignId) {
         return postService.getPostsByCampaign(campaignId);
     }
 
     // ❌ Delete
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public String deleteCampaign(@PathVariable Long id) {
         campaignService.deleteCampaign(id);
         return "Campaign deleted";
@@ -66,6 +73,7 @@ public class CampaignController {
 
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public Campaign createCampaign(@RequestBody CreateCampaignRequest request) {
         return campaignService.createManualCampaign(request);
     }

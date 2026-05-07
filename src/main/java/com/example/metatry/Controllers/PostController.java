@@ -34,6 +34,7 @@ public class PostController {
     // ================= BASIC =================
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public List<Post> getAllPosts(){
         return postService.getAllPosts();
     }
@@ -64,11 +65,13 @@ public class PostController {
     }
 
     @GetMapping("/approved")
+    @PreAuthorize("isAuthenticated()")
     public List<Post> getApprovedPosts(){
         return postService.getApprovedPosts();
     }
 
     @GetMapping("/platform/{platform}")
+    @PreAuthorize("isAuthenticated()")
     public List<Post> getPostsByPlatform(@PathVariable PlatformType platform){
         return postService.getPostsByPlatform(platform);
     }
@@ -93,6 +96,7 @@ public class PostController {
     // ================= UPDATE =================
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<?> updatePost(
             @PathVariable Long id,
             @RequestBody UpdatePostRequest request){
@@ -105,7 +109,7 @@ public class PostController {
     // ================= DELETE =================
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<?> deletePost(@PathVariable Long id){
 
         postService.deletePost(id);
@@ -115,7 +119,7 @@ public class PostController {
 
     // ================= CREATE MANUALLY =================
     @PostMapping(value = "/campaigns/{campaignId}/posts", consumes = "multipart/form-data")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public Post createPost(
             @PathVariable Long campaignId,
             @RequestPart("data") CreatePostRequest request,
@@ -136,7 +140,7 @@ public class PostController {
     // ================= AI IMAGE =================
 
     @PostMapping("/{id}/generate-image")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<PostImage> generateImage(@PathVariable Long id){
 
         Post post = postRepository.findById(id)
@@ -150,6 +154,7 @@ public class PostController {
     // ================= CLEANUP =================
 
     @DeleteMapping("/cleanup-images")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<?> cleanDuplicateImages(){
 
         postService.cleanDuplicateImages();
