@@ -24,11 +24,22 @@ public class CampaignController {
     private final CampaignService campaignService;
     private final PostService postService;
 
-    // 🔥 AI GENERATION (KEEP)
+    // 🔥 AI GENERATION - NEW CAMPAIGN
     @PostMapping("/generate")
     @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public List<Post> generateCampaign(@RequestBody CreateCampaignRequest request) {
         return campaignService.createCampaignAndGeneratePosts(request);
+    }
+
+    // 🔥 AI GENERATION - EXISTING CAMPAIGN
+    @PostMapping("/{campaignId}/generate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
+    public List<Post> generateForExistingCampaign(
+            @PathVariable Long campaignId,
+            @RequestBody java.util.Map<String, Object> body
+    ) {
+        int postNumber = body.containsKey("postNumber") ? (int) body.get("postNumber") : 1;
+        return campaignService.generatePostsForExistingCampaign(campaignId, postNumber);
     }
 
     // 🔥 NEW: MANUAL CAMPAIGN
@@ -76,5 +87,12 @@ public class CampaignController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public Campaign createCampaign(@RequestBody CreateCampaignRequest request) {
         return campaignService.createManualCampaign(request);
+    }
+
+    // 📊 Get recent campaigns (last N)
+    @GetMapping("/recent")
+    @PreAuthorize("isAuthenticated()")
+    public List<CampaignDTO> getRecentCampaigns(@RequestParam(defaultValue = "5") int limit) {
+        return campaignService.getRecentCampaigns(limit);
     }
 }

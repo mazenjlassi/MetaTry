@@ -66,6 +66,34 @@ public class CampaignService {
         );
     }
 
+    // ================= GENERATE FOR EXISTING CAMPAIGN =================
+
+    public List<Post> generatePostsForExistingCampaign(Long campaignId, int postNumber) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+
+        // GET INSIGHTS
+        String insights = "No insights yet";
+        try {
+            insights = insightService.generateCampaignInsights(campaign.getId()).getSummary();
+        } catch (Exception ignored) {}
+
+        // GET CONVERSATION STRATEGY
+        String conclusion = "Focus on engagement and clarity";
+        try {
+            conclusion = chatService.generateConclusion(null);
+        } catch (Exception ignored) {}
+
+        // GENERATE POSTS WITH EXISTING CAMPAIGN
+        return aiContentService.generatePostsWithCampaign(
+                campaign.getTopic(),
+                postNumber,
+                campaign,
+                insights,
+                conclusion
+        );
+    }
+
     public Post createPostForCampaign(
             Long campaignId,
             CreatePostRequest request,
@@ -114,12 +142,12 @@ public class CampaignService {
 
     public List<CampaignDTO> getAllCampaigns() {
         return campaignRepository.findAllWithPosts().stream()
-                .map(c -> new CampaignDTO(
-                        c.getId(),
-                        c.getName(),
-                        c.getTopic(),
-                        c.getPosts() != null ? c.getPosts().size() : 0
-                ))
+                .map(c -> CampaignDTO.builder()
+                        .id(c.getId())
+                        .name(c.getName())
+                        .topic(c.getTopic())
+                        .postCount(c.getPosts() != null ? c.getPosts().size() : 0)
+                        .build())
                 .toList();
     }
 
@@ -130,12 +158,12 @@ public class CampaignService {
         Campaign c = campaignRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Campaign not found"));
 
-        return new CampaignDTO(
-                c.getId(),
-                c.getName(),
-                c.getTopic(),
-                c.getPosts() != null ? c.getPosts().size() : 0
-        );
+        return CampaignDTO.builder()
+                .id(c.getId())
+                .name(c.getName())
+                .topic(c.getTopic())
+                .postCount(c.getPosts() != null ? c.getPosts().size() : 0)
+                .build();
     }
 
     // ================= DELETE =================
@@ -184,6 +212,25 @@ public class CampaignService {
                     .status(c.getCreatedAt() != null ? "Active" : "Draft")
                     .build();
             })
+            .toList();
+    }
+
+    // ================= GET RECENT CAMPAIGNS =================
+
+    public List<CampaignDTO> getRecentCampaigns(int limit) {
+        return campaignRepository.findAll().stream()
+            .sorted((c1, c2) -> {
+                if (c1.getCreatedAt() == null) return 1;
+                if (c2.getCreatedAt() == null) return -1;
+                return c2.getCreatedAt().compareTo(c1.getCreatedAt());
+            })
+            .limit(limit)
+            .map(c -> CampaignDTO.builder()
+                .id(c.getId())
+                .name(c.getName())
+                .topic(c.getTopic())
+                .postCount(c.getPosts() != null ? c.getPosts().size() : 0)
+                .build())
             .toList();
     }
 }
