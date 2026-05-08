@@ -3,6 +3,7 @@ package com.example.metatry.Services;
 import com.example.metatry.DTOs.CreateCampaignRequest;
 import com.example.metatry.DTOs.CampaignDTO;
 import com.example.metatry.DTOs.CreatePostRequest;
+import com.example.metatry.DTOs.CampaignProgressDTO;
 import com.example.metatry.Enums.PostStatus;
 import com.example.metatry.Models.Campaign;
 import com.example.metatry.Models.Post;
@@ -160,5 +161,29 @@ public class CampaignService {
         campaign.setTopic(request.getTopic());
 
         return campaignRepository.save(campaign);
+    }
+
+    public List<CampaignProgressDTO> getCampaignsWithProgress(int limit) {
+        List<Campaign> campaigns = campaignRepository.findAll();
+
+        return campaigns.stream()
+            .limit(limit)
+            .map(c -> {
+                List<Post> posts = postRepository.findByCampaignId(c.getId());
+                int totalPosts = posts.size();
+                int publishedPosts = (int) posts.stream()
+                    .filter(p -> p.getStatus() == PostStatus.PUBLISHED)
+                    .count();
+
+                return CampaignProgressDTO.builder()
+                    .id(c.getId())
+                    .name(c.getName())
+                    .topic(c.getTopic())
+                    .totalPosts(totalPosts)
+                    .publishedPosts(publishedPosts)
+                    .status(c.getCreatedAt() != null ? "Active" : "Draft")
+                    .build();
+            })
+            .toList();
     }
 }

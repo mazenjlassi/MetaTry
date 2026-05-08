@@ -359,5 +359,46 @@ public class PostService {
                 .build();
     }
 
+    public WeeklyComparisonDTO getWeeklyComparison() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime thisWeekStart = now.minusDays(now.getDayOfWeek().getValue() - 1).withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime thisWeekEnd = thisWeekStart.plusDays(7);
+        LocalDateTime lastWeekStart = thisWeekStart.minusDays(7);
+        LocalDateTime lastWeekEnd = thisWeekStart;
+
+        long thisWeekCount = postRepository.countByStatusAndPublishedAtBetween(
+            PostStatus.PUBLISHED, thisWeekStart, thisWeekEnd
+        );
+
+        long lastWeekCount = postRepository.countByStatusAndPublishedAtBetween(
+            PostStatus.PUBLISHED, lastWeekStart, lastWeekEnd
+        );
+
+        double percentage = 0;
+        boolean increased = false;
+
+        if (lastWeekCount > 0) {
+            percentage = ((double)(thisWeekCount - lastWeekCount) / lastWeekCount) * 100;
+            increased = thisWeekCount >= lastWeekCount;
+        } else if (thisWeekCount > 0) {
+            percentage = 100;
+            increased = true;
+        }
+
+        return WeeklyComparisonDTO.builder()
+            .thisWeek((int) thisWeekCount)
+            .lastWeek((int) lastWeekCount)
+            .percentage(Math.abs(percentage))
+            .increased(increased)
+            .build();
+    }
+
+    public List<Post> getUpcomingScheduledPosts(int limit) {
+        return postRepository.findByStatusAndScheduledAtAfterOrderByScheduledAtAsc(
+            PostStatus.SCHEDULED,
+            LocalDateTime.now()
+        ).stream().limit(limit).toList();
+    }
+
 
 }

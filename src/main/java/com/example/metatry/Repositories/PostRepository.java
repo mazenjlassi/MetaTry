@@ -51,14 +51,17 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     List<Post> findTop20ByStatusOrderByPublishedAtDesc(PostStatus status);
 
-    List<Post> findByScheduledAtBetween(LocalDateTime start, LocalDateTime end);
+List<Post> findByScheduledAtBetween(LocalDateTime start, LocalDateTime end);
 
     List<Post> findByPublishedAtBetween(LocalDateTime start, LocalDateTime end);
 
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.status = :status AND p.publishedAt >= :start AND p.publishedAt < :end")
+    long countByStatusAndPublishedAtBetween(
+        @Param("status") PostStatus status,
+        @Param("start") LocalDateTime start,
+        @Param("end") LocalDateTime end
+    );
 
-
-
-
-
+    List<Post> findByStatusAndScheduledAtAfterOrderByScheduledAtAsc(PostStatus status, LocalDateTime after);
 
 }

@@ -1,5 +1,6 @@
 package com.example.metatry.Services;
 
+import com.example.metatry.DTOs.UserStatsDTO;
 import com.example.metatry.Enums.Role;
 import com.example.metatry.Models.User;
 import com.example.metatry.Repositories.UserRepository;
@@ -79,5 +80,27 @@ public class AdminService {
 
         user.setBanned(false);
         return userRepository.save(user);
+    }
+
+    public UserStatsDTO getUserStats() {
+        List<User> allUsers = userRepository.findAll();
+
+        long totalUsers = allUsers.size();
+        long totalMarketing = allUsers.stream()
+            .filter(u -> u.getRole() == Role.MARKETING)
+            .count();
+        long activeUsers = allUsers.stream()
+            .filter(u -> !Boolean.TRUE.equals(u.getBanned()))
+            .count();
+        long bannedUsers = allUsers.stream()
+            .filter(u -> Boolean.TRUE.equals(u.getBanned()))
+            .count();
+
+        return UserStatsDTO.builder()
+            .totalUsers(totalUsers)
+            .totalMarketing(totalMarketing)
+            .activeUsers(activeUsers)
+            .bannedUsers(bannedUsers)
+            .build();
     }
 }

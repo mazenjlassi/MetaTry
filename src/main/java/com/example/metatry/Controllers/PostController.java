@@ -2,6 +2,8 @@ package com.example.metatry.Controllers;
 
 import com.example.metatry.DTOs.CalendarEventDTO;
 import com.example.metatry.DTOs.CreatePostRequest;
+import com.example.metatry.DTOs.TimingAnalysisDTO;
+import com.example.metatry.DTOs.WeeklyComparisonDTO;
 import com.example.metatry.DTOs.PostDto;
 import com.example.metatry.DTOs.PostStatsResponse;
 import com.example.metatry.DTOs.UpdatePostRequest;
@@ -13,6 +15,7 @@ import com.example.metatry.Repositories.PostImageRepository;
 import com.example.metatry.Repositories.PostRepository;
 import com.example.metatry.Services.AiImageService;
 import com.example.metatry.Services.PostService;
+import com.example.metatry.Services.PostTimingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +37,7 @@ public class PostController {
     private final PostService postService;
     private final AiImageService aiImageService;
     private final PostImageRepository postImageRepository;
+    private final PostTimingService postTimingService;
 
     // ================= BASIC =================
 
@@ -200,5 +204,25 @@ public class PostController {
         LocalDateTime startLocal = start.toLocalDateTime();
         LocalDateTime endLocal = end.toLocalDateTime();
         return postService.getCalendarEvents(startLocal, endLocal);
+    }
+
+    @GetMapping("/timing-analysis")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
+    public TimingAnalysisDTO getTimingAnalysis() {
+        return postTimingService.analyzeBestPostingTimes();
+    }
+
+    @GetMapping("/weekly-comparison")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
+    public WeeklyComparisonDTO getWeeklyComparison() {
+        return postService.getWeeklyComparison();
+    }
+
+    @GetMapping("/upcoming-scheduled")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
+    public List<Post> getUpcomingScheduled(
+            @RequestParam(defaultValue = "3") int limit
+    ) {
+        return postService.getUpcomingScheduledPosts(limit);
     }
 }
