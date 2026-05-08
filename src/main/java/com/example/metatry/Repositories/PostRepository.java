@@ -51,6 +51,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     List<Post> findTop20ByStatusOrderByPublishedAtDesc(PostStatus status);
 
+    List<Post> findByScheduledAtBetween(LocalDateTime start, LocalDateTime end);
+
+    List<Post> findByPublishedAtBetween(LocalDateTime start, LocalDateTime end);
+
 
 
 

@@ -310,5 +310,54 @@ public class PostService {
         return postRepository.findTop20ByStatusOrderByPublishedAtDesc(PostStatus.PUBLISHED);
     }
 
+    public List<CalendarEventDTO> getCalendarEvents(LocalDateTime start, LocalDateTime end) {
+        List<CalendarEventDTO> events = new java.util.ArrayList<>();
+
+        List<Post> scheduledPosts = postRepository.findByScheduledAtBetween(start, end);
+        for (Post post : scheduledPosts) {
+            events.add(mapToCalendarEvent(post, post.getScheduledAt()));
+        }
+
+        List<Post> publishedPosts = postRepository.findByPublishedAtBetween(start, end);
+        for (Post post : publishedPosts) {
+            if (post.getPublishedAt() != null) {
+                boolean exists = events.stream().anyMatch(e -> e.getId().equals(post.getId()));
+                if (!exists) {
+                    events.add(mapToCalendarEvent(post, post.getPublishedAt()));
+                }
+            }
+        }
+
+        return events;
+    }
+
+    private CalendarEventDTO mapToCalendarEvent(Post post, LocalDateTime eventTime) {
+        String imageUrl = null;
+        if (post.getImage() != null) {
+            imageUrl = post.getImage().getImageUrl();
+        }
+
+        String campaignName = null;
+        Long campaignId = null;
+        if (post.getCampaign() != null) {
+            campaignName = post.getCampaign().getName();
+            campaignId = post.getCampaign().getId();
+        }
+
+        return CalendarEventDTO.builder()
+                .id(post.getId())
+                .title(post.getTitle())
+                .content(post.getContent() != null && post.getContent().length() > 100
+                    ? post.getContent().substring(0, 100) + "..." : post.getContent())
+                .scheduledAt(post.getScheduledAt())
+                .publishedAt(post.getPublishedAt())
+                .status(post.getStatus())
+                .platform(post.getPlatform())
+                .imageUrl(imageUrl)
+                .campaignId(campaignId)
+                .campaignName(campaignName)
+                .build();
+    }
+
 
 }

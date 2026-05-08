@@ -1,5 +1,6 @@
 package com.example.metatry.Controllers;
 
+import com.example.metatry.DTOs.CalendarEventDTO;
 import com.example.metatry.DTOs.CreatePostRequest;
 import com.example.metatry.DTOs.PostDto;
 import com.example.metatry.DTOs.PostStatsResponse;
@@ -13,11 +14,14 @@ import com.example.metatry.Repositories.PostRepository;
 import com.example.metatry.Services.AiImageService;
 import com.example.metatry.Services.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -185,5 +189,16 @@ public class PostController {
     public ResponseEntity<List<Post>> getPermanentPosts() {
         List<Post> posts = postService.getPermanentPosts();
         return ResponseEntity.ok(posts);
+    }
+
+    @GetMapping("/calendar")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
+    public List<CalendarEventDTO> getCalendarEvents(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime end
+    ) {
+        LocalDateTime startLocal = start.toLocalDateTime();
+        LocalDateTime endLocal = end.toLocalDateTime();
+        return postService.getCalendarEvents(startLocal, endLocal);
     }
 }
