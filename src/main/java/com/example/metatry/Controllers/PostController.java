@@ -63,7 +63,7 @@ public class PostController {
     @GetMapping("/scheduled")
     @PreAuthorize("isAuthenticated()")
     public List<Post> getScheduled() {
-        return postService.getScheduledPosts();
+        return postService.getAllScheduledPosts();
     }
 
     @GetMapping("/published")

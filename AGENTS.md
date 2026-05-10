@@ -13,6 +13,54 @@ This document tracks all feature implementations and changes for the MetaTry soc
 
 ## Recent Changes Summary
 
+### Session: Scheduled Posts Logic Fix
+
+**Date**: May 2026
+
+**Goal**: Fix scheduler to only publish posts whose scheduledAt time has arrived, and fix GET /posts/scheduled to return only future scheduled posts.
+
+**Changes:**
+
+#### `PostService.java`
+- `createPostForCampaign()` — Only sets status = SCHEDULED if `scheduledAt` is provided; otherwise sets status = DRAFT
+- Added `getAllScheduledPosts()` — returns future scheduled posts only (`scheduledAt > now`)
+- Added `getScheduledPostsToPublish()` — returns posts ready to publish (`approved=true AND scheduledAt <= now`)
+- Removed old `getScheduledPosts()` (replaced by the two methods above)
+
+#### `PostController.java`
+- `GET /posts/scheduled` — now calls `getAllScheduledPosts()` (future posts only)
+
+#### `PostScheduler.java`
+- Now calls `getScheduledPostsToPublish()` instead of `getScheduledPosts()`
+- Only publishes posts where `approved=true` AND `scheduledAt <= now`
+
+**PostRepository methods used:**
+- `findByStatusAndScheduledAtAfterOrderByScheduledAtAsc` — for GET /scheduled and dashboard upcoming
+- `findByApprovedTrueAndStatusAndScheduledAtBefore` — for scheduler
+
+**Expected behavior:**
+| Action | Behavior |
+|--------|----------|
+| Create post WITH `scheduledAt` + approved | status = `SCHEDULED` |
+| Create post WITHOUT `scheduledAt` | status = `DRAFT` |
+| `GET /posts/scheduled` | Returns only **future** scheduled posts |
+| Scheduler (every 1 min) | Publishes only when `approved=true` AND `scheduledAt <= now` |
+| After publishing | status → `PUBLISHED`, post disappears from `/scheduled` |
+
+---
+
+### Session: Campaign List - Remove Budget & View Button
+
+**Date**: May 2026
+
+**Changes:**
+
+#### `campaign-list.component.html`
+- Removed budget stat from campaign cards
+- Removed "View" button — only "Open" button remains
+
+---
+
 ### Session: Campaign Management - Add to Existing Campaign
 
 **Date**: May 2026
@@ -218,6 +266,10 @@ GET    /posts/calendar?start=&end= - Get calendar events
 GET    /posts/timing-analysis  - Get best posting times
 GET    /posts/weekly-comparison - Get weekly comparison
 GET    /posts/upcoming-scheduled?limit=3 - Get upcoming posts
+GET    /posts/scheduled        - Get future scheduled posts only
+GET    /posts/drafts           - Get draft posts
+GET    /posts/published       - Get published posts
+GET    /posts/permanent       - Get permanent posts
 POST   /publish/{postId}        - Publish a post
 PUT    /posts/{id}              - Update post
 DELETE /posts/{id}              - Delete post
@@ -238,3 +290,7 @@ GET    /admin/campaigns/progress - Get campaign progress
 - Dark mode support via `body.dark-mode` CSS class
 - ZonedDateTime used for calendar endpoints (ISO format with timezone)
 - Campaign selector shows last 5 campaigns by default
+- **Scheduled posts**: `GET /posts/scheduled` returns future posts only (`scheduledAt > now`)
+- **Scheduler**: auto-publishes only posts where `approved=true` AND `scheduledAt <= now`
+- Posts without `scheduledAt` are created as `DRAFT`, not `SCHEDULED`
+- Campaign cards no longer show budget or View button

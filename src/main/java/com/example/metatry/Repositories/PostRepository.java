@@ -64,4 +64,12 @@ List<Post> findByScheduledAtBetween(LocalDateTime start, LocalDateTime end);
 
     List<Post> findByStatusAndScheduledAtAfterOrderByScheduledAtAsc(PostStatus status, LocalDateTime after);
 
+    List<Post> findByStatusAndApprovedTrueAndScheduledAtBefore(
+            PostStatus status,
+            LocalDateTime dateTime
+    );
+
+    // for displaying all scheduled posts
+    List<Post> findByStatusOrderByScheduledAtAsc(PostStatus status);
+
 }

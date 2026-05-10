@@ -17,7 +17,7 @@ public class PostScheduler {
     @Scheduled(fixedRate = 60000) // every 1 minute
     public void publishScheduledPosts() {
 
-        List<Post> posts = postService.getScheduledPosts();
+        List<Post> posts = postService.getScheduledPostsToPublish();
 
         for (Post post : posts) {
 

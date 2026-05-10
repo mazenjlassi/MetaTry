@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -142,8 +143,13 @@ public class PostService {
         post.setGeneratedByAI(false);
         post.setApproved(true);
 
-        post.setStatus(PostStatus.SCHEDULED);
-        post.setScheduledAt(request.getScheduledAt());
+        if (request.getScheduledAt() != null) {
+            post.setStatus(PostStatus.SCHEDULED);
+            post.setScheduledAt(request.getScheduledAt());
+        } else {
+            post.setStatus(PostStatus.DRAFT);
+            post.setScheduledAt(null);
+        }
 
         post.setPermanent(request.isPermanent());
         post.setCampaign(campaign);
@@ -222,9 +228,20 @@ public class PostService {
 
     // ================= SCHEDULER =================
 
-    public List<Post> getScheduledPosts(){
+    // Frontend: /posts/scheduled — returns future scheduled posts only
+    public List<Post> getAllScheduledPosts() {
+        return postRepository.findByStatusAndScheduledAtAfterOrderByScheduledAtAsc(
+                PostStatus.SCHEDULED, LocalDateTime.now().plusHours(1)
+        );
+    }
 
-        return postRepository.findByStatus(PostStatus.SCHEDULED);
+    // Scheduler: only posts ready to publish (approved=true + time has arrived)
+    public List<Post> getScheduledPostsToPublish() {
+
+        return postRepository.findByApprovedTrueAndStatusAndScheduledAtBefore(
+                PostStatus.SCHEDULED,
+                LocalDateTime.now().plusHours(1)
+        );
     }
 
     // ================= CLEAN IMAGES =================
