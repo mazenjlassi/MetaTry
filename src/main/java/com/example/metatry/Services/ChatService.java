@@ -146,6 +146,7 @@ Rules:
 - Use bullet points when possible
 - Avoid long paragraphs
 - Give practical and actionable answers
+-the response can't be longer than 3 lines
 - If question is not IT-related, redirect it to a tech perspective
 
 Conversation:

@@ -67,7 +67,7 @@ public class PostService {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
-        // 🚨 BLOCK update if published (unless permanent)
+        //  BLOCK update if published (unless permanent)
         if (post.getStatus() == PostStatus.PUBLISHED && !post.isPermanent()) {
             throw new RuntimeException("Cannot update a published non-permanent post");
         }
@@ -96,15 +96,15 @@ public class PostService {
         if(request.getLink() != null)
             post.setLink(request.getLink());
 
-        // 🔥 restrict platform change
+        //  restrict platform change
         if(request.getPlatform() != null && post.getStatus() == PostStatus.DRAFT)
             post.setPlatform(request.getPlatform());
 
-        // 🔥 update image if exists
+        //  update image if exists
         if(request.getImageUrl() != null && post.getImage() != null)
             post.getImage().setImageUrl(request.getImageUrl());
 
-        // 🔥 update status logic
+        // update status logic
         if (post.getScheduledAt() != null && post.getStatus() != PostStatus.PUBLISHED) {
             post.setStatus(PostStatus.SCHEDULED);
         }
@@ -160,7 +160,7 @@ public class PostService {
         }
         post.setLink(link);
 
-        // 🔥 USE YOUR CLOUDINARY SERVICE
+        //  USE  CLOUDINARY SERVICE
         if (file != null && !file.isEmpty()) {
             try {
                 String imageUrl = cloudinaryService.uploadImage(file);
@@ -330,19 +330,9 @@ public class PostService {
     public List<CalendarEventDTO> getCalendarEvents(LocalDateTime start, LocalDateTime end) {
         List<CalendarEventDTO> events = new java.util.ArrayList<>();
 
-        List<Post> scheduledPosts = postRepository.findByScheduledAtBetween(start, end);
+        List<Post> scheduledPosts = postRepository.findByStatusAndScheduledAtBetween(PostStatus.SCHEDULED, start, end);
         for (Post post : scheduledPosts) {
             events.add(mapToCalendarEvent(post, post.getScheduledAt()));
-        }
-
-        List<Post> publishedPosts = postRepository.findByPublishedAtBetween(start, end);
-        for (Post post : publishedPosts) {
-            if (post.getPublishedAt() != null) {
-                boolean exists = events.stream().anyMatch(e -> e.getId().equals(post.getId()));
-                if (!exists) {
-                    events.add(mapToCalendarEvent(post, post.getPublishedAt()));
-                }
-            }
         }
 
         return events;

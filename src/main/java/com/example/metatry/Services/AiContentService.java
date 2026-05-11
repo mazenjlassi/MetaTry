@@ -68,7 +68,7 @@ public class AiContentService {
 
         try {
 
-            // 🔥 NEW PROMPT (INSIGHTS + STRATEGY)
+            // NEW PROMPT (INSIGHTS + STRATEGY)
             String prompt = promptBuilderService.buildPrompt(topic, insights, conclusion);
 
             String aiText = geminiService.generate(prompt);

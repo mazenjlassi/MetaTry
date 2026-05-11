@@ -71,7 +71,7 @@ public class SocialPublisherService {
     }
 
     /**
-     * Automatically select the best image for the platform
+     *  select  image for the platform
      */
     private PostImage selectBestImage(Post post){
 
@@ -126,7 +126,7 @@ public class SocialPublisherService {
             response = facebookService.postText(caption);
         }
 
-        // ✅ FIX: Facebook returns "id"
+        //  Facebook returns "id"
         if(response != null && response.get("id") != null){
             post.setPlatformPostId((String) response.get("id"));
         }

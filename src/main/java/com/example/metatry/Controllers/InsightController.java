@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
         private final InsightService insightService;
 
-        //  Campaign AI Insight
+
         @GetMapping("/campaign/{campaignId}")
         @PreAuthorize("isAuthenticated()")
         public PostInsightDTO getCampaignInsights(@PathVariable Long campaignId) {
