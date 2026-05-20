@@ -3,11 +3,14 @@ package com.example.metatry.Services;
 import com.example.metatry.DTOs.ScrapeRequest;
 import com.example.metatry.DTOs.ScrapeResponse;
 import com.example.metatry.DTOs.ScrapedPostDTO;
+import com.example.metatry.Models.ScrapedPost;
+import com.example.metatry.Repositories.ScrapedPostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -17,8 +20,9 @@ public class ScraperService {
     private static final String SCRAPER_BASE_URL = "http://localhost:3001";
     
     private final RestTemplate restTemplate;
+    private final ScrapedPostRepository scrapedPostRepository;
 
-    public ScrapeResponse scrape(String companyName, String linkedin, String instagram, String facebook) {
+    public ScrapeResponse scrapeAndSave(String companyName, String linkedin, String instagram, String facebook, String topic) {
         try {
             String url = SCRAPER_BASE_URL + "/scrape";
             
@@ -45,6 +49,10 @@ public class ScraperService {
 
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 Map<String, Object> body = response.getBody();
+                
+                // Save to database
+                savePostsToDatabase(companyName, body, topic);
+                
                 return buildResponse(companyName, body, "success", null);
             }
 
@@ -52,6 +60,46 @@ public class ScraperService {
 
         } catch (Exception e) {
             return buildResponse(companyName, null, "error", e.getMessage());
+        }
+    }
+
+    public ScrapeResponse scrape(String companyName, String linkedin, String instagram, String facebook) {
+        return scrapeAndSave(companyName, linkedin, instagram, facebook, null);
+    }
+
+    private void savePostsToDatabase(String companyName, Map<String, Object> body, String topic) {
+        Object rawResults = body.get("results");
+        if (rawResults instanceof List) {
+            List<?> resultsList = (List<?>) rawResults;
+            for (Object item : resultsList) {
+                if (item instanceof Map) {
+                    Map<?, ?> itemMap = (Map<?, ?>) item;
+                    String platform = String.valueOf(itemMap.get("platform"));
+                    Object postsObj = itemMap.get("posts");
+                    
+                    if (postsObj instanceof List) {
+                        List<?> postsList = (List<?>) postsObj;
+                        for (Object postObj : postsList) {
+                            if (postObj instanceof Map) {
+                                Map<?, ?> postMap = (Map<?, ?>) postObj;
+                                
+                                ScrapedPost post = ScrapedPost.builder()
+                                    .companyName(companyName)
+                                    .platform(platform)
+                                    .postText(postMap.get("postText") != null ? postMap.get("postText").toString() : "")
+                                    .postUrl(postMap.get("url") != null ? postMap.get("url").toString() : "")
+                                    .postedAt(postMap.get("postedAt") != null ? postMap.get("postedAt").toString() : "")
+                                    .scrapedAt(LocalDateTime.now())
+                                    .topic(topic != null ? topic : companyName)
+                                    .usedForPattern(false)
+                                    .build();
+                                
+                                scrapedPostRepository.save(post);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -94,7 +142,7 @@ public class ScraperService {
                                 .postedAt(postedAt)
                                 .url(url)
                                 .build();
-                                posts.add(post);
+                            posts.add(post);
                             }
                         }
                     }

@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/facebook/public-test").permitAll()
                         .requestMatchers("/api/linkedin/callback").permitAll()
                         .requestMatchers("/api/scraper/**").permitAll()
+                        .requestMatchers("/api/patterns/**").permitAll()
                         .requestMatchers("/error").permitAll()
 
                         // ✅ PROTECTED
