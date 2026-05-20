@@ -5,8 +5,10 @@ import com.example.metatry.Enums.ImageSize;
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Enums.PostStatus;
 import com.example.metatry.Models.Campaign;
+import com.example.metatry.Models.ContentPattern;
 import com.example.metatry.Models.Post;
 import com.example.metatry.Models.PostImage;
+import com.example.metatry.Repositories.ContentPatternRepository;
 import com.example.metatry.Repositories.PostImageRepository;
 import com.example.metatry.Repositories.PostRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,10 +27,9 @@ public class AiContentService {
 
     private final PostRepository postRepository;
     private final PostImageRepository postImageRepository;
+    private final ContentPatternRepository contentPatternRepository;
 
     private final ObjectMapper objectMapper;
-
-    // ================= MAIN ENTRY =================
 
     public List<Post> generatePostsWithCampaign(
             String topic,
@@ -37,8 +38,6 @@ public class AiContentService {
             String insights,
             String conclusion
     ) {
-
-        // ✅ SAFE FALLBACKS
         String safeInsights = (insights == null || insights.isBlank())
                 ? "No insights available"
                 : insights;
@@ -47,34 +46,32 @@ public class AiContentService {
                 ? "Focus on engagement, clarity, and value"
                 : conclusion;
 
+        ContentPattern pattern = contentPatternRepository.findByTopic(topic).orElse(null);
+
         List<Post> allPosts = new ArrayList<>();
 
         for (int i = 0; i < postNumber; i++) {
-            List<Post> batch = generateSingleBatch(topic, campaign, safeInsights, safeConclusion);
+            List<Post> batch = generateSingleBatch(topic, campaign, safeInsights, safeConclusion, pattern);
             allPosts.addAll(batch);
         }
 
         return allPosts;
     }
 
-    // ================= GENERATE ONE BATCH =================
-
     private List<Post> generateSingleBatch(
             String topic,
             Campaign campaign,
             String insights,
-            String conclusion
+            String conclusion,
+            ContentPattern pattern
     ) {
 
         try {
-
-            // NEW PROMPT (INSIGHTS + STRATEGY)
-            String prompt = promptBuilderService.buildPrompt(topic, insights, conclusion);
+            String prompt = promptBuilderService.buildPrompt(topic, insights, conclusion, pattern);
 
             String aiText = geminiService.generate(prompt);
 
-            AiGeneratedContent aiContent =
-                    objectMapper.readValue(aiText, AiGeneratedContent.class);
+            AiGeneratedContent aiContent = objectMapper.readValue(aiText, AiGeneratedContent.class);
 
             List<Post> postsToSave = new ArrayList<>();
 
@@ -104,10 +101,7 @@ public class AiContentService {
 
             List<Post> savedPosts = postRepository.saveAll(postsToSave);
 
-            // ================= IMAGES =================
-
             for (Post post : savedPosts) {
-
                 ImageSize size = switch (post.getPlatform()) {
                     case INSTAGRAM -> ImageSize.SQUARE;
                     case LINKEDIN, FACEBOOK -> ImageSize.LANDSCAPE;
@@ -130,8 +124,6 @@ public class AiContentService {
             throw new RuntimeException("Error generating AI posts: " + e.getMessage());
         }
     }
-
-    // ================= CREATE POST =================
 
     private Post createPost(
             String title,
