@@ -44,6 +44,13 @@ public class Post {
 
     private LocalDateTime publishedAt;
 
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
     private boolean permanent = false;
 
     private String link = "https://3lm-solutions2.odoo.com/contactus";

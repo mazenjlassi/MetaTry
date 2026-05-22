@@ -99,7 +99,7 @@ public class PatternAnalysisService {
 
         String aiResponse = geminiService.generate(fullPrompt);
 
-        return parseAndSaveCampaigns(aiResponse, posts);
+        return parseAndSaveCampaigns(aiResponse, posts, companyName);
     }
 
     private String buildPostsTextWithIndices(List<ScrapedPost> posts) {
@@ -157,7 +157,7 @@ public class PatternAnalysisService {
             """.formatted(postsText);
     }
 
-    private int parseAndSaveCampaigns(String aiResponse, List<ScrapedPost> allPosts) {
+    private int parseAndSaveCampaigns(String aiResponse, List<ScrapedPost> allPosts, String companyName) {
         try {
             String cleanJson = aiResponse.replace("```json", "").replace("```", "").trim();
             int firstBracket = cleanJson.indexOf("[");
@@ -205,6 +205,7 @@ public class PatternAnalysisService {
                 String usedPostIdsJson = objectMapper.writeValueAsString(postIds);
 
                 ContentPattern pattern = ContentPattern.builder()
+                    .companyName(companyName)
                     .topic(topic)
                     .campaignName(campaignName)
                     .platformBreakdown(platformBreakdown)
@@ -235,6 +236,10 @@ public class PatternAnalysisService {
 
     public List<ContentPattern> getAllPatterns() {
         return contentPatternRepository.findAll();
+    }
+
+    public List<ContentPattern> getPatternsByCompany(String companyName) {
+        return contentPatternRepository.findByCompanyName(companyName);
     }
 
     public ContentPattern getPatternByTopic(String topic) {

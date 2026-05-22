@@ -59,4 +59,8 @@ public class ScrapedPostService {
             scrapedPostRepository.save(post);
         });
     }
+
+    public List<String> getDistinctCompanies() {
+        return scrapedPostRepository.findDistinctCompanyNames();
+    }
 }

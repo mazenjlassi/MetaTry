@@ -40,8 +40,15 @@ public class PatternController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ContentPattern>> getAllPatterns() {
-        return ResponseEntity.ok(patternAnalysisService.getAllPatterns());
+    public ResponseEntity<List<ContentPattern>> getAllPatterns(
+            @RequestParam(required = false) String companyName) {
+        List<ContentPattern> patterns;
+        if (companyName != null && !companyName.isEmpty()) {
+            patterns = patternAnalysisService.getPatternsByCompany(companyName);
+        } else {
+            patterns = patternAnalysisService.getAllPatterns();
+        }
+        return ResponseEntity.ok(patterns);
     }
 
     @GetMapping("/{topic}")

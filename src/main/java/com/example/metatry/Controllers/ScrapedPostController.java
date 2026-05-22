@@ -64,6 +64,11 @@ public class ScrapedPostController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/companies")
+    public List<String> getCompanies() {
+        return scrapedPostService.getDistinctCompanies();
+    }
+
     @GetMapping("/count")
     public Map<String, Long> getCount(
             @RequestParam(required = false) String companyName,

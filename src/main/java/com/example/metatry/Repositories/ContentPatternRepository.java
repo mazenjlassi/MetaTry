@@ -14,5 +14,7 @@ public interface ContentPatternRepository extends JpaRepository<ContentPattern, 
 
     List<ContentPattern> findByTopicContainingIgnoreCase(String keyword);
 
+    List<ContentPattern> findByCompanyName(String companyName);
+
     List<ContentPattern> findTop3ByOrderByExtractedAtDesc();
 }

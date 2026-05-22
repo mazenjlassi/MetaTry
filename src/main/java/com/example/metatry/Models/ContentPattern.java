@@ -20,6 +20,9 @@ public class ContentPattern {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "company_name", length = 255)
+    private String companyName;
+
     @Column(name = "topic")
     private String topic;
 

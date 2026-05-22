@@ -2,6 +2,7 @@ package com.example.metatry.Repositories;
 
 import com.example.metatry.Models.ScrapedPost;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -30,4 +31,7 @@ public interface ScrapedPostRepository extends JpaRepository<ScrapedPost, Long> 
     long countByCompanyName(String companyName);
 
     long countByPlatform(String platform);
+
+    @Query("SELECT DISTINCT p.companyName FROM ScrapedPost p WHERE p.companyName IS NOT NULL AND p.companyName <> ''")
+    List<String> findDistinctCompanyNames();
 }
