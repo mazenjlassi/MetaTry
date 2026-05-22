@@ -23,8 +23,14 @@ public class ContentPattern {
     @Column(name = "topic")
     private String topic;
 
-    @Column(name = "platform")
-    private String platform;
+    @Column(name = "campaign_name", length = 255)
+    private String campaignName;
+
+    @Column(name = "platform_breakdown", columnDefinition = "TEXT")
+    private String platformBreakdown;
+
+    @Column(name = "used_post_ids", columnDefinition = "TEXT")
+    private String usedPostIds;
 
     @Column(name = "post_frequency", length = 100)
     private String postFrequency;
@@ -52,6 +58,18 @@ public class ContentPattern {
 
     @Column(name = "ai_analysis_raw", columnDefinition = "TEXT")
     private String aiAnalysisRaw;
+
+    @Column(name = "avg_engagement_score")
+    private Double avgEngagementScore;
+
+    @Column(name = "total_posts_generated")
+    private Integer totalPostsGenerated;
+
+    @Column(name = "performance_advice", columnDefinition = "TEXT")
+    private String performanceAdvice;
+
+    @Column(name = "last_performance_update")
+    private LocalDateTime lastPerformanceUpdate;
 
     @Column(name = "extracted_at")
     private LocalDateTime extractedAt;

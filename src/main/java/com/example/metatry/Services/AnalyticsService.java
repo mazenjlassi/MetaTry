@@ -26,6 +26,7 @@ public class AnalyticsService {
     private final PostMetricRepository postMetricRepository;
     private final PostRepository postRepository;
     private final PostCommentRepository postCommentRepository;
+    private final PerformanceFeedbackService performanceFeedbackService;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -64,6 +65,8 @@ public class AnalyticsService {
                 e.printStackTrace();
             }
         }
+
+        performanceFeedbackService.updatePatternsFromPerformance();
     }
 
     // ================= FACEBOOK METRICS =================

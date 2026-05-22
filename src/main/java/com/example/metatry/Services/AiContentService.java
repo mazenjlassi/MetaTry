@@ -24,6 +24,7 @@ public class AiContentService {
 
     private final PromptBuilderService promptBuilderService;
     private final GeminiService geminiService;
+    private final MemoryContextService memoryContextService;
 
     private final PostRepository postRepository;
     private final PostImageRepository postImageRepository;
@@ -69,7 +70,10 @@ public class AiContentService {
         try {
             String prompt = promptBuilderService.buildPrompt(topic, insights, conclusion, pattern);
 
-            String aiText = geminiService.generate(prompt);
+            String memory = memoryContextService.getMatchingContext(topic);
+            String fullPrompt = prompt + "\n\n" + memory;
+
+            String aiText = geminiService.generate(fullPrompt);
 
             AiGeneratedContent aiContent = objectMapper.readValue(aiText, AiGeneratedContent.class);
 

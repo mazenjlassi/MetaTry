@@ -8,4 +8,6 @@ import java.util.List;
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
     List<Message> findByConversationIdOrderByTimestampAsc(Long conversationId);
+
+    List<Message> findTop2ByRoleOrderByTimestampDesc(com.example.metatry.Enums.MessageRole role);
 }

@@ -12,6 +12,7 @@ public class AiInsightService {
 
     private final GeminiService geminiService;
     private final ObjectMapper objectMapper;
+    private final MemoryContextService memoryContextService;
 
     public String analyzeComments(List<String> comments){
 
@@ -50,6 +51,10 @@ Example format:
 
 Comments:
 - """ + joinedComments;
-        return geminiService.generate(prompt);
+
+        String memory = memoryContextService.getRecentContext();
+        String fullPrompt = prompt + "\n\n" + memory;
+
+        return geminiService.generate(fullPrompt);
     }
 }

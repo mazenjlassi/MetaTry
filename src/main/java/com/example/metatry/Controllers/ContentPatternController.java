@@ -50,7 +50,7 @@ public class ContentPatternController {
     }
 
     @GetMapping("/exists")
-    public ResponseEntity<Boolean> exists(@RequestParam String topic, @RequestParam String platform) {
-        return ResponseEntity.ok(contentPatternService.exists(topic, platform));
+    public ResponseEntity<Boolean> exists(@RequestParam String topic) {
+        return ResponseEntity.ok(contentPatternService.exists(topic));
     }
 }

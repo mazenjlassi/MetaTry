@@ -72,4 +72,6 @@ List<Post> findByStatusAndScheduledAtBetween(PostStatus status, LocalDateTime st
     // for displaying all scheduled posts
     List<Post> findByStatusOrderByScheduledAtAsc(PostStatus status);
 
+    List<Post> findTop3ByOrderByCreatedAtDesc();
+
 }

@@ -11,4 +11,5 @@ public interface MarketingInsightRepository extends JpaRepository<MarketingInsig
 
     List<MarketingInsight> findByPlatform(String platform);
 
+    List<MarketingInsight> findTop2ByOrderByCreatedAtDesc();
 }

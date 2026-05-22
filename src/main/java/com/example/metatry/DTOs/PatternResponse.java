@@ -14,7 +14,8 @@ import java.time.LocalDateTime;
 public class PatternResponse {
     private Long id;
     private String topic;
-    private String platform;
+    private String campaignName;
+    private String platformBreakdown;
     private String postFrequency;
     private String contentLength;
     private String mediaType;

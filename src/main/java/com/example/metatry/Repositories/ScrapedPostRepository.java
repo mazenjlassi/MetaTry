@@ -19,6 +19,14 @@ public interface ScrapedPostRepository extends JpaRepository<ScrapedPost, Long> 
 
     List<ScrapedPost> findByUsedForPatternFalse();
 
+    long countByUsedForPatternFalse();
+
+    List<ScrapedPost> findTop30ByUsedForPatternFalse();
+
+    long countByCompanyNameAndUsedForPatternFalse(String companyName);
+
+    List<ScrapedPost> findTop30ByCompanyNameAndUsedForPatternFalse(String companyName);
+
     long countByCompanyName(String companyName);
 
     long countByPlatform(String platform);

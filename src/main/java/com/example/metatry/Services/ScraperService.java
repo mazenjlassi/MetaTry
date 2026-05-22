@@ -21,6 +21,7 @@ public class ScraperService {
     
     private final RestTemplate restTemplate;
     private final ScrapedPostRepository scrapedPostRepository;
+    private final PatternAnalysisService patternAnalysisService;
 
     public ScrapeResponse scrapeAndSave(String companyName, String linkedin, String instagram, String facebook, String topic) {
         try {
@@ -100,6 +101,12 @@ public class ScraperService {
                     }
                 }
             }
+        }
+
+        long unanalyzed = scrapedPostRepository.countByCompanyNameAndUsedForPatternFalse(companyName);
+        if (unanalyzed >= 30) {
+            int patternsSaved = patternAnalysisService.analyzeUnanalyzedBatch(companyName);
+            System.out.println("Auto-analyzed batch for " + companyName + ": " + patternsSaved + " patterns saved from " + unanalyzed + " unanalyzed posts");
         }
     }
 

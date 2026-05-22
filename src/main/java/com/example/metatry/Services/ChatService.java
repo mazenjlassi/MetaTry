@@ -19,6 +19,7 @@ public class ChatService {
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
     private final GeminiService geminiService;
+    private final MemoryContextService memoryContextService;
 
     // ================= MAPPERS =================
 
@@ -108,7 +109,10 @@ No quotes.
 Message:
 """ + userMessage;
 
-                String generatedTitle = geminiService.generate(titlePrompt);
+                String memory = memoryContextService.getRecentContext();
+                String fullTitlePrompt = titlePrompt + "\n\n" + memory;
+
+                String generatedTitle = geminiService.generate(fullTitlePrompt);
 
                 if (generatedTitle != null && !generatedTitle.isBlank()) {
 
@@ -151,7 +155,11 @@ Rules:
 
 Conversation:
 """ + String.join("\n", messages);
-        String aiResponse = geminiService.generate(prompt);
+
+        String memory = memoryContextService.getRecentContext();
+        String fullPrompt = prompt + "\n\n" + memory;
+
+        String aiResponse = geminiService.generate(fullPrompt);
 
         // 4. Save AI response
         Message ai = Message.builder()
@@ -180,7 +188,10 @@ Summarize this discussion into a clear actionable conclusion (2-3 sentences):
 
 """ + String.join("\n", texts);
 
-        String result = geminiService.generate(prompt);
+        String memory = memoryContextService.getRecentContext();
+        String fullPrompt = prompt + "\n\n" + memory;
+
+        String result = geminiService.generate(fullPrompt);
 
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow();

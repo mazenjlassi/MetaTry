@@ -48,7 +48,26 @@ public class PromptBuilderService {
             if (pattern.getCtaStyle() != null && !pattern.getCtaStyle().isEmpty()) {
                 prompt.append("CTA STYLE: ").append(pattern.getCtaStyle()).append("\n");
             }
+            if (pattern.getPlatformBreakdown() != null && !pattern.getPlatformBreakdown().isEmpty()) {
+                prompt.append("PLATFORM SPLIT: ").append(pattern.getPlatformBreakdown()).append("\n");
+            }
             prompt.append("\n");
+
+            // PERFORMANCE DATA
+            if (pattern.getAvgEngagementScore() != null) {
+                prompt.append("============================================\n");
+                prompt.append("PAST PERFORMANCE DATA\n");
+                prompt.append("============================================\n\n");
+                String level = pattern.getAvgEngagementScore() > 0.5 ? "HIGH" : pattern.getAvgEngagementScore() > 0.2 ? "MEDIUM" : "LOW";
+                prompt.append("Avg Engagement Score: ").append(String.format("%.2f", pattern.getAvgEngagementScore())).append(" (").append(level).append(")\n");
+                if (pattern.getTotalPostsGenerated() != null) {
+                    prompt.append("Total Posts Generated: ").append(pattern.getTotalPostsGenerated()).append("\n");
+                }
+                if (pattern.getPerformanceAdvice() != null && !pattern.getPerformanceAdvice().isEmpty()) {
+                    prompt.append("ADVICE: ").append(pattern.getPerformanceAdvice()).append("\n");
+                }
+                prompt.append("\n");
+            }
         }
 
         // CONTENT PRINCIPLES

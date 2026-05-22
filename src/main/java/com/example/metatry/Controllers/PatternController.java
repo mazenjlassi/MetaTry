@@ -4,6 +4,7 @@ import com.example.metatry.DTOs.PatternAnalysisRequest;
 import com.example.metatry.DTOs.PatternResponse;
 import com.example.metatry.Models.ContentPattern;
 import com.example.metatry.Services.PatternAnalysisService;
+import com.example.metatry.Services.PerformanceFeedbackService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ import java.util.List;
 public class PatternController {
 
     private final PatternAnalysisService patternAnalysisService;
+    private final PerformanceFeedbackService performanceFeedbackService;
 
     @PostMapping("/analyze")
     public ResponseEntity<PatternResponse> analyzePattern(@RequestBody PatternAnalysisRequest request) {
@@ -29,6 +31,12 @@ public class PatternController {
         }
         PatternResponse response = patternAnalysisService.analyzePattern(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/analyze-batch")
+    public ResponseEntity<String> analyzeBatch(@RequestParam String companyName) {
+        int saved = patternAnalysisService.analyzeUnanalyzedBatch(companyName);
+        return ResponseEntity.ok("Saved " + saved + " patterns from batch for " + companyName);
     }
 
     @GetMapping
@@ -46,11 +54,23 @@ public class PatternController {
     }
 
     @GetMapping("/match")
-    public ResponseEntity<ContentPattern> matchPattern(@RequestParam String topic) {
-        ContentPattern pattern = patternAnalysisService.getPatternByTopic(topic);
-        if (pattern == null) {
+    public ResponseEntity<List<ContentPattern>> matchPattern(@RequestParam String topic) {
+        List<ContentPattern> patterns = patternAnalysisService.findMatchingPatterns(topic);
+        if (patterns.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(pattern);
+        return ResponseEntity.ok(patterns);
+    }
+
+    @GetMapping("/performance")
+    public ResponseEntity<List<ContentPattern>> getPatternsByPerformance() {
+        List<ContentPattern> patterns = performanceFeedbackService.getPatternsByPerformance();
+        return ResponseEntity.ok(patterns);
+    }
+
+    @PostMapping("/feedback/run")
+    public ResponseEntity<String> runFeedback() {
+        performanceFeedbackService.updatePatternsFromPerformance();
+        return ResponseEntity.ok("Performance feedback executed");
     }
 }

@@ -26,10 +26,6 @@ public class ContentPatternService {
         return contentPatternRepository.findByTopic(topic);
     }
 
-    public Optional<ContentPattern> getByTopicAndPlatform(String topic, String platform) {
-        return contentPatternRepository.findByTopicAndPlatform(topic, platform);
-    }
-
     public ContentPattern save(ContentPattern pattern) {
         return contentPatternRepository.save(pattern);
     }
@@ -38,8 +34,8 @@ public class ContentPatternService {
         contentPatternRepository.deleteById(id);
     }
 
-    public boolean exists(String topic, String platform) {
-        return contentPatternRepository.existsByTopicAndPlatform(topic, platform);
+    public boolean exists(String topic) {
+        return contentPatternRepository.findByTopic(topic).isPresent();
     }
 
     public ContentPattern update(Long id, ContentPattern updated) {
