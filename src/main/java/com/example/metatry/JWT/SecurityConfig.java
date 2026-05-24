@@ -45,8 +45,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/facebook/public-test").permitAll()
                         .requestMatchers("/api/linkedin/callback").permitAll()
                         .requestMatchers("/api/scraper/scrape").permitAll()
+                        .requestMatchers("/api/scraper/trigger").authenticated()
                         .requestMatchers("/api/scraped-posts/**").authenticated()
                         .requestMatchers("/api/patterns/**").authenticated()
+                        .requestMatchers("/api/company-profiles/**").authenticated()
                         .requestMatchers("/error").permitAll()
 
                         // ✅ PROTECTED

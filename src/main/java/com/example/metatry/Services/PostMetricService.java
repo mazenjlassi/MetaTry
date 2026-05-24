@@ -14,14 +14,14 @@ public class PostMetricService {
     private final PostMetricRepository postMetricRepository;
 
     /**
-     * 📊 Get full metrics history for a post (for charts)
+     * Get full metrics history for a post (for charts)
      */
     public List<PostMetric> getMetricsHistory(Long postId) {
         return postMetricRepository.findByPostIdOrderByCollectedAtAsc(postId);
     }
 
     /**
-     * 📌 Get latest metrics snapshot
+     *  Get latest metrics snapshot
      */
     public PostMetric getLatestMetric(Long postId) {
         return postMetricRepository

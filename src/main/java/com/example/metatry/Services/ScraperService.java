@@ -3,7 +3,9 @@ package com.example.metatry.Services;
 import com.example.metatry.DTOs.ScrapeRequest;
 import com.example.metatry.DTOs.ScrapeResponse;
 import com.example.metatry.DTOs.ScrapedPostDTO;
+import com.example.metatry.Models.CompanyProfile;
 import com.example.metatry.Models.ScrapedPost;
+import com.example.metatry.Repositories.CompanyProfileRepository;
 import com.example.metatry.Repositories.ScrapedPostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
@@ -17,14 +19,42 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ScraperService {
 
-    private static final String SCRAPER_BASE_URL = "http://localhost:3001";
+    private static final String SCRAPER_BASE_URL = "http://host.docker.internal:3001";
     
     private final RestTemplate restTemplate;
     private final ScrapedPostRepository scrapedPostRepository;
     private final PatternAnalysisService patternAnalysisService;
+    private final ScraperProcessService scraperProcessService;
+    private final CompanyProfileRepository companyProfileRepository;
+
+    public ScrapeResponse scrapeCompany(String companyName) {
+        CompanyProfile profile = companyProfileRepository.findByCompanyName(companyName)
+            .orElseThrow(() -> new RuntimeException("Company profile not found: " + companyName));
+        return scrapeAndSave(
+            profile.getCompanyName(),
+            profile.getLinkedinUrl(),
+            profile.getInstagramUrl(),
+            profile.getFacebookUrl(),
+            null
+        );
+    }
+
+    public void scrapeAllCompanies() {
+        List<CompanyProfile> profiles = companyProfileRepository.findAll();
+        for (CompanyProfile profile : profiles) {
+            try {
+                scrapeCompany(profile.getCompanyName());
+                Thread.sleep(2000);
+            } catch (Exception e) {
+                System.err.println("Failed to scrape " + profile.getCompanyName() + ": " + e.getMessage());
+            }
+        }
+    }
 
     public ScrapeResponse scrapeAndSave(String companyName, String linkedin, String instagram, String facebook, String topic) {
         try {
+            scraperProcessService.ensureRunning();
+
             String url = SCRAPER_BASE_URL + "/scrape";
             
             Map<String, String> accounts = new HashMap<>();
@@ -51,7 +81,6 @@ public class ScraperService {
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 Map<String, Object> body = response.getBody();
                 
-                // Save to database
                 savePostsToDatabase(companyName, body, topic);
                 
                 return buildResponse(companyName, body, "success", null);

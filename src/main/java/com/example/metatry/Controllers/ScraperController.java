@@ -32,6 +32,30 @@ public class ScraperController {
             request.getFacebook()
         );
 
+        if ("error".equals(response.getStatus())) {
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/trigger")
+    public ResponseEntity<ScrapeResponse> trigger(@RequestParam String companyName) {
+        if (companyName == null || companyName.isBlank()) {
+            return ResponseEntity.badRequest().body(
+                ScrapeResponse.builder()
+                    .status("error")
+                    .message("companyName is required")
+                    .build()
+            );
+        }
+
+        ScrapeResponse response = scraperService.scrapeCompany(companyName);
+
+        if ("error".equals(response.getStatus())) {
+            return ResponseEntity.badRequest().body(response);
+        }
+
         return ResponseEntity.ok(response);
     }
 }

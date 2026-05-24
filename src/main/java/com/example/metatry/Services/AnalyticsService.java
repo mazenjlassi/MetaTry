@@ -15,8 +15,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -36,11 +35,17 @@ public class AnalyticsService {
     @Value("${facebook.page-id}")
     private String pageId;
 
+    @Value("${instagram.business-id}")
+    private String instagramBusinessId;
+
     // ================= MAIN =================
 
     public void collectMetricsForPublishedPosts(){
 
         List<Post> posts = postService.getLastPublishedPosts(20);
+
+        // Batch-fetch all Instagram media metrics in one call
+        Map<String, int[]> igMetricsCache = fetchAllInstagramMetrics();
 
         for(Post post : posts){
 
@@ -52,10 +57,10 @@ public class AnalyticsService {
 
                     case FACEBOOK -> {
                         fetchFacebookMetrics(post);
-                        fetchFacebookComments(post); // ✅ FIXED
+                        fetchFacebookComments(post);
                     }
 
-                    case INSTAGRAM -> fetchInstagramMetrics(post);
+                    case INSTAGRAM -> fetchInstagramMetrics(post, igMetricsCache);
 
                     case LINKEDIN -> { continue; }
                 }
@@ -109,7 +114,6 @@ public class AnalyticsService {
 
         String postId = post.getPlatformPostId();
 
-        // ⚠️ Try WITHOUT pageId prefix (more reliable for comments)
         System.out.println("➡️ Fetching comments for: " + postId);
 
         try {
@@ -170,7 +174,39 @@ public class AnalyticsService {
 
     // ================= INSTAGRAM =================
 
-    private void fetchInstagramMetrics(Post post){
+    private Map<String, int[]> fetchAllInstagramMetrics() {
+        Map<String, int[]> cache = new HashMap<>();
+        try {
+            String url = "https://graph.facebook.com/v19.0/" + instagramBusinessId +
+                    "/media?fields=id,like_count,comments_count&limit=100" +
+                    "&access_token=" + token;
+
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            if (response == null || response.get("data") == null) return cache;
+
+            List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
+            for (Map<String, Object> item : data) {
+                String id = (String) item.get("id");
+                int likes = item.get("like_count") != null
+                        ? ((Number) item.get("like_count")).intValue() : 0;
+                int comments = item.get("comments_count") != null
+                        ? ((Number) item.get("comments_count")).intValue() : 0;
+                cache.put(id, new int[]{likes, comments});
+            }
+
+            System.out.println("✅ Batch-fetched " + cache.size() + " Instagram media metrics");
+        } catch (Exception e) {
+            System.out.println("❌ Failed to batch-fetch Instagram metrics: " + e.getMessage());
+        }
+        return cache;
+    }
+
+    private void fetchInstagramMetrics(Post post, Map<String, int[]> cache) {
+        int[] metrics = cache.get(post.getPlatformPostId());
+        if (metrics != null) {
+            saveAndUpdate(post, metrics[0], metrics[1], 0, 0);
+            return;
+        }
 
         String url = "https://graph.facebook.com/v19.0/" + post.getPlatformPostId() +
                 "?fields=like_count,comments_count" +
