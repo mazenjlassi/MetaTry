@@ -23,6 +23,7 @@ public class ScraperService {
     
     private final RestTemplate restTemplate;
     private final ScrapedPostRepository scrapedPostRepository;
+    private final ScrapedPostService scrapedPostService;
     private final PatternAnalysisService patternAnalysisService;
     private final ScraperProcessService scraperProcessService;
     private final CompanyProfileRepository companyProfileRepository;
@@ -124,7 +125,7 @@ public class ScraperService {
                                     .usedForPattern(false)
                                     .build();
                                 
-                                scrapedPostRepository.save(post);
+                                scrapedPostService.save(post);
                             }
                         }
                     }
@@ -134,8 +135,12 @@ public class ScraperService {
 
         long unanalyzed = scrapedPostRepository.countByCompanyNameAndUsedForPatternFalse(companyName);
         if (unanalyzed >= 30) {
-            int patternsSaved = patternAnalysisService.analyzeUnanalyzedBatch(companyName);
-            System.out.println("Auto-analyzed batch for " + companyName + ": " + patternsSaved + " patterns saved from " + unanalyzed + " unanalyzed posts");
+            try {
+                int patternsSaved = patternAnalysisService.analyzeUnanalyzedBatch(companyName);
+                System.out.println("Auto-analyzed batch for " + companyName + ": " + patternsSaved + " patterns saved from " + unanalyzed + " unanalyzed posts");
+            } catch (Exception e) {
+                System.out.println("Pattern analysis failed for " + companyName + " (non-fatal): " + e.getMessage());
+            }
         }
     }
 

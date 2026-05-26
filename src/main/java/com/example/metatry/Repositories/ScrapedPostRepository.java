@@ -6,9 +6,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ScrapedPostRepository extends JpaRepository<ScrapedPost, Long> {
+
+    Optional<ScrapedPost> findByCompanyNameAndPlatformAndPostUrl(String companyName, String platform, String postUrl);
+
+    Optional<ScrapedPost> findByCompanyNameAndPlatformAndPostText(String companyName, String platform, String postText);
 
     List<ScrapedPost> findByCompanyName(String companyName);
 
