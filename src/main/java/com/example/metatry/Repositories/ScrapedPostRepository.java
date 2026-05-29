@@ -2,6 +2,7 @@ package com.example.metatry.Repositories;
 
 import com.example.metatry.Models.ScrapedPost;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -39,4 +40,13 @@ public interface ScrapedPostRepository extends JpaRepository<ScrapedPost, Long> 
 
     @Query("SELECT DISTINCT p.companyName FROM ScrapedPost p WHERE p.companyName IS NOT NULL AND p.companyName <> ''")
     List<String> findDistinctCompanyNames();
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "DELETE p1 FROM scraped_posts p1 " +
+           "INNER JOIN scraped_posts p2 " +
+           "WHERE p1.id > p2.id " +
+           "AND p1.company_name = p2.company_name " +
+           "AND p1.platform = p2.platform " +
+           "AND p1.post_text = p2.post_text", nativeQuery = true)
+    int deleteDuplicates();
 }

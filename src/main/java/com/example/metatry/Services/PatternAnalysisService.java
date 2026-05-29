@@ -29,7 +29,7 @@ public class PatternAnalysisService {
         try {
             String topic = request.getTopic();
             String platform = request.getPlatform() != null ? request.getPlatform() : "linkedin";
-            int minPosts = request.getMinPostsRequired() != null ? request.getMinPostsRequired() : 5;
+            int minPosts = request.getMinPostsRequired() != null ? request.getMinPostsRequired() : 3;
 
             List<ScrapedPost> posts;
             if (request.getCompanyName() != null && !request.getCompanyName().isEmpty()) {
@@ -86,7 +86,7 @@ public class PatternAnalysisService {
 
     public int analyzeUnanalyzedBatch(String companyName) {
         List<ScrapedPost> posts = scrapedPostRepository.findTop30ByCompanyNameAndUsedForPatternFalse(companyName);
-        if (posts.size() < 3) {
+        if (posts == null || posts.size() < 3) {
             return 0;
         }
 
@@ -127,7 +127,7 @@ public class PatternAnalysisService {
             - platformBreakdown: count of posts per platform (e.g., {"linkedin": 2, "instagram": 3, "facebook": 2})
             - tone: e.g., Technical/educational, casual/friendly
             - contentLength: e.g., 150-300 chars, under 100
-            - mediaType: e.g., 80% images, 20% videos
+            - mediaType: e.g., 80%% images, 20%% videos
             - hashtagCount: e.g., 3-5 per post, none, 10+
             - timingPattern: e.g., Tuesday/Thursday 9-11am
             - ctaStyle: e.g., Links to articles, questions to engage
@@ -160,13 +160,24 @@ public class PatternAnalysisService {
     private int parseAndSaveCampaigns(String aiResponse, List<ScrapedPost> allPosts, String companyName) {
         try {
             String cleanJson = aiResponse.replace("```json", "").replace("```", "").trim();
-            int firstBracket = cleanJson.indexOf("[");
-            int lastBracket = cleanJson.lastIndexOf("]");
-            if (firstBracket != -1 && lastBracket != -1) {
-                cleanJson = cleanJson.substring(firstBracket, lastBracket + 1);
+
+            JsonNode root = objectMapper.readTree(cleanJson);
+
+            JsonNode campaigns;
+            if (root.isArray()) {
+                campaigns = root;
+            } else if (root.isObject()) {
+                campaigns = root.path("campaigns");
+                if (campaigns.isMissingNode() || !campaigns.isArray()) {
+                    campaigns = root.path("campaignIndices");
+                }
+                if (campaigns.isMissingNode() || !campaigns.isArray()) {
+                    return 0;
+                }
+            } else {
+                return 0;
             }
 
-            JsonNode campaigns = objectMapper.readTree(cleanJson);
             int savedCount = 0;
 
             for (JsonNode campaign : campaigns) {

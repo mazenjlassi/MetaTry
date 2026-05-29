@@ -134,13 +134,18 @@ public class ScraperService {
         }
 
         long unanalyzed = scrapedPostRepository.countByCompanyNameAndUsedForPatternFalse(companyName);
-        if (unanalyzed >= 30) {
+        if (unanalyzed >= 3) {
             try {
                 int patternsSaved = patternAnalysisService.analyzeUnanalyzedBatch(companyName);
                 System.out.println("Auto-analyzed batch for " + companyName + ": " + patternsSaved + " patterns saved from " + unanalyzed + " unanalyzed posts");
             } catch (Exception e) {
                 System.out.println("Pattern analysis failed for " + companyName + " (non-fatal): " + e.getMessage());
             }
+        }
+
+        int removed = scrapedPostService.removeDuplicates();
+        if (removed > 0) {
+            System.out.println("Cleaned up " + removed + " duplicate posts for " + companyName);
         }
     }
 

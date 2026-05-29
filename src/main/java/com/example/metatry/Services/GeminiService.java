@@ -18,37 +18,47 @@ public class GeminiService {
 
     public String generate(String prompt){
 
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="
-                + geminiConfig.getApiKey();
+        try {
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="
+                    + geminiConfig.getApiKey();
 
-        Map<String, Object> body = Map.of(
-                "contents", List.of(
-                        Map.of(
-                                "parts", List.of(
-                                        Map.of("text", prompt)
-                                )
-                        )
-                )
-        );
+            Map<String, Object> body = Map.of(
+                    "contents", List.of(
+                            Map.of(
+                                    "parts", List.of(
+                                            Map.of("text", prompt)
+                                    )
+                            )
+                    )
+            );
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<Map<String, Object>> request =
-                new HttpEntity<>(body, headers);
+            HttpEntity<Map<String, Object>> request =
+                    new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response =
-                restTemplate.exchange(url, HttpMethod.POST, request, Map.class);
+            ResponseEntity<Map> response =
+                    restTemplate.exchange(url, HttpMethod.POST, request, Map.class);
 
-        String rawText = extractText(response.getBody());
+            String rawText = extractText(response.getBody());
 
-        return cleanJson(rawText);
+            return cleanJson(rawText);
+
+        } catch (Exception e) {
+            System.out.println("Gemini API error: " + e.getClass().getName() + " - " + e.getMessage());
+            e.printStackTrace(System.out);
+            throw new RuntimeException("Gemini API failed: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+        }
     }
 
     private String extractText(Map<String, Object> response){
 
         try {
             var candidates = (List<Map<String, Object>>) response.get("candidates");
+            if (candidates == null || candidates.isEmpty()) {
+                throw new RuntimeException("No candidates in response: " + response);
+            }
             var content = (Map<String, Object>) candidates.get(0).get("content");
             var parts = (List<Map<String, Object>>) content.get("parts");
 
@@ -59,23 +69,27 @@ public class GeminiService {
         }
     }
 
-    // 🔥 CLEAN JSON SAFELY
-    private String cleanJson(String text){
+    private String cleanJson(String text) {
 
         if(text == null) return "";
 
-        // remove markdown
         text = text.replace("```json", "");
         text = text.replace("```", "");
 
         text = text.trim();
 
-        // extract JSON block
-        int firstBrace = text.indexOf("{");
-        int lastBrace = text.lastIndexOf("}");
-
-        if(firstBrace != -1 && lastBrace != -1){
-            text = text.substring(firstBrace, lastBrace + 1);
+        if (text.startsWith("[")) {
+            int firstBracket = text.indexOf("[");
+            int lastBracket = text.lastIndexOf("]");
+            if (firstBracket != -1 && lastBracket != -1) {
+                text = text.substring(firstBracket, lastBracket + 1);
+            }
+        } else {
+            int firstBrace = text.indexOf("{");
+            int lastBrace = text.lastIndexOf("}");
+            if (firstBrace != -1 && lastBrace != -1) {
+                text = text.substring(firstBrace, lastBrace + 1);
+            }
         }
 
         return text;

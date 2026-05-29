@@ -2,6 +2,7 @@ package com.example.metatry.Services;
 
 import com.example.metatry.Models.ScrapedPost;
 import com.example.metatry.Repositories.ScrapedPostRepository;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -51,7 +52,10 @@ public class ScrapedPostService {
             boolean isUniquePostUrl = baseUrl.contains("/p/")
                 || baseUrl.contains("/posts/")
                 || baseUrl.contains("/photo/")
-                || baseUrl.contains("/reel/");
+                || baseUrl.contains("/reel/")
+                || baseUrl.contains("/videos/")
+                || baseUrl.contains("/story.php")
+                || baseUrl.contains("/permalink.php");
             if (isUniquePostUrl) {
                 Optional<ScrapedPost> byUrl = scrapedPostRepository
                     .findByCompanyNameAndPlatformAndPostUrl(
@@ -61,13 +65,23 @@ public class ScrapedPostService {
         }
 
         if (text != null && !text.isEmpty()) {
-            Optional<ScrapedPost> byText = scrapedPostRepository
-                .findByCompanyNameAndPlatformAndPostText(
-                    post.getCompanyName(), post.getPlatform(), text);
-            if (byText.isPresent()) return byText;
+            String cleanText = text.trim().toLowerCase();
+            List<ScrapedPost> candidates = scrapedPostRepository
+                .findByCompanyNameAndPlatform(post.getCompanyName(), post.getPlatform());
+            for (ScrapedPost candidate : candidates) {
+                if (candidate.getPostText() != null
+                    && candidate.getPostText().trim().toLowerCase().equals(cleanText)) {
+                    return Optional.of(candidate);
+                }
+            }
         }
 
         return Optional.empty();
+    }
+
+    @Transactional
+    public int removeDuplicates() {
+        return scrapedPostRepository.deleteDuplicates();
     }
 
     public void delete(Long id) {
