@@ -11,6 +11,7 @@ import com.example.metatry.Repositories.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -100,9 +101,8 @@ public class MemoryContextService {
         context.append("MATCHING PATTERNS FOR TOPIC: ").append(topic).append("\n");
         context.append("============================================\n\n");
 
-        List<ContentPattern> matches = contentPatternRepository.findByTopic(topic)
-                .map(List::of)
-                .orElseGet(List::of);
+        List<ContentPattern> matches = new ArrayList<>();
+        contentPatternRepository.findByTopic(topic).ifPresent(matches::add);
 
         if (matches.isEmpty()) {
             String[] keywords = topic.split("\\s+");
