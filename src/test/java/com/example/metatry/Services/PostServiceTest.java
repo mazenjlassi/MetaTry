@@ -335,7 +335,7 @@ class PostServiceTest {
                 .status(PostStatus.SCHEDULED).platform(PlatformType.LINKEDIN)
                 .campaign(campaign).image(image).build();
         when(postRepository.findByStatusAndScheduledAtBetween(
-                PostStatus.SCHEDULED, LocalDateTime.now(), LocalDateTime.now().plusDays(30)))
+                eq(PostStatus.SCHEDULED), any(), any()))
                 .thenReturn(List.of(post));
 
         List<CalendarEventDTO> events = postService.getCalendarEvents(
