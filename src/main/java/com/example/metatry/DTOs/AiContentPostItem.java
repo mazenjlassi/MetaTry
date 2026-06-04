@@ -8,6 +8,7 @@ import java.util.List;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AiContentPostItem {
+    private String platform;
     private String title;
     private String content;
     private List<String> hashtags;

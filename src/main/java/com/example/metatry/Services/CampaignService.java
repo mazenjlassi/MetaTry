@@ -59,7 +59,6 @@ public class CampaignService {
         //  GENERATE POSTS WITH FULL CONTEXT
         return aiContentService.generatePostsWithCampaign(
                 request.getTopic(),
-                request.getPostNumber(),
                 campaign,
                 insights,
                 conclusion
@@ -68,7 +67,7 @@ public class CampaignService {
 
     // ================= GENERATE FOR EXISTING CAMPAIGN =================
 
-    public List<Post> generatePostsForExistingCampaign(Long campaignId, int postNumber) {
+    public List<Post> generatePostsForExistingCampaign(Long campaignId) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Campaign not found"));
 
@@ -87,7 +86,6 @@ public class CampaignService {
         // GENERATE POSTS WITH EXISTING CAMPAIGN
         return aiContentService.generatePostsWithCampaign(
                 campaign.getTopic(),
-                postNumber,
                 campaign,
                 insights,
                 conclusion

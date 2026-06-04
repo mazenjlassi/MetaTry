@@ -59,12 +59,10 @@ class SimpleDtoTest {
         dto.setConversationId(1L);
         dto.setName("Campaign 1");
         dto.setTopic("AI Marketing");
-        dto.setPostNumber(5);
 
         assertThat(dto.getConversationId()).isEqualTo(1L);
         assertThat(dto.getName()).isEqualTo("Campaign 1");
         assertThat(dto.getTopic()).isEqualTo("AI Marketing");
-        assertThat(dto.getPostNumber()).isEqualTo(5);
     }
 
     @Test

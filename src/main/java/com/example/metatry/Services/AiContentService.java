@@ -2,7 +2,6 @@ package com.example.metatry.Services;
 
 import com.example.metatry.DTOs.AiContentPostItem;
 import com.example.metatry.DTOs.AiContentPostList;
-import com.example.metatry.DTOs.AiGeneratedContent;
 import com.example.metatry.Enums.ImageSize;
 import com.example.metatry.Enums.PlatformType;
 import com.example.metatry.Enums.PostStatus;
@@ -39,7 +38,6 @@ public class AiContentService {
 
     public List<Post> generatePostsWithCampaign(
             String topic,
-            int postNumber,
             Campaign campaign,
             String insights,
             String conclusion
@@ -58,12 +56,7 @@ public class AiContentService {
             return generateFromPattern(topic, campaign, safeInsights, safeConclusion, pattern);
         }
 
-        List<Post> allPosts = new ArrayList<>();
-        for (int i = 0; i < postNumber; i++) {
-            List<Post> batch = generateSingleBatch(topic, campaign, safeInsights, safeConclusion, pattern);
-            allPosts.addAll(batch);
-        }
-        return allPosts;
+        return generateEstimatedPosts(topic, campaign, safeInsights, safeConclusion, pattern);
     }
 
     private ContentPattern findBestMatchingPattern(String topic) {
@@ -168,67 +161,62 @@ public class AiContentService {
         };
     }
 
-    private List<Post> generateSingleBatch(
+    private List<Post> generateEstimatedPosts(
             String topic,
             Campaign campaign,
             String insights,
             String conclusion,
             ContentPattern pattern
     ) {
-
         try {
-            String prompt = promptBuilderService.buildPrompt(topic, insights, conclusion, pattern);
+            String prompt = promptBuilderService.buildEstimatedPrompt(topic, insights, conclusion, pattern);
 
             String memory = memoryContextService.getMatchingContext(topic);
             String fullPrompt = prompt + "\n\n" + memory;
 
             String aiText = geminiService.generate(fullPrompt);
 
-            AiGeneratedContent aiContent = objectMapper.readValue(aiText, AiGeneratedContent.class);
+            AiContentPostList postList = objectMapper.readValue(aiText, AiContentPostList.class);
+
+            if (postList.getPosts() == null || postList.getPosts().isEmpty()) {
+                return List.of();
+            }
 
             List<Post> postsToSave = new ArrayList<>();
+            for (AiContentPostItem item : postList.getPosts()) {
+                PlatformType platform = mapToPlatformType(item.getPlatform());
+                if (platform == null) continue;
 
-            postsToSave.add(createPost(
-                    aiContent.getLinkedinTitle(),
-                    aiContent.getLinkedinPost(),
-                    aiContent.getLinkedinHashtags(),
-                    PlatformType.LINKEDIN,
-                    campaign
-            ));
-
-            postsToSave.add(createPost(
-                    aiContent.getInstagramTitle(),
-                    aiContent.getInstagramPost(),
-                    aiContent.getInstagramHashtags(),
-                    PlatformType.INSTAGRAM,
-                    campaign
-            ));
-
-            postsToSave.add(createPost(
-                    aiContent.getFacebookTitle(),
-                    aiContent.getFacebookPost(),
-                    aiContent.getFacebookHashtags(),
-                    PlatformType.FACEBOOK,
-                    campaign
-            ));
+                postsToSave.add(createPost(
+                        item.getTitle(),
+                        item.getContent(),
+                        item.getHashtags(),
+                        platform,
+                        campaign
+                ));
+            }
 
             List<Post> savedPosts = postRepository.saveAll(postsToSave);
 
-            for (Post post : savedPosts) {
+            List<PostImage> imagesToSave = new ArrayList<>();
+            for (int i = 0; i < savedPosts.size(); i++) {
+                Post post = savedPosts.get(i);
+                AiContentPostItem item = postList.getPosts().get(i);
+
                 ImageSize size = switch (post.getPlatform()) {
                     case INSTAGRAM -> ImageSize.SQUARE;
                     case LINKEDIN, FACEBOOK -> ImageSize.LANDSCAPE;
                 };
 
                 PostImage image = PostImage.builder()
-                        .imagePrompt(aiContent.getImagePrompt())
+                        .imagePrompt(item.getImagePrompt())
                         .size(size)
                         .post(post)
                         .selected(false)
                         .build();
-
-                postImageRepository.save(image);
+                imagesToSave.add(image);
             }
+            postImageRepository.saveAll(imagesToSave);
 
             return savedPosts;
 

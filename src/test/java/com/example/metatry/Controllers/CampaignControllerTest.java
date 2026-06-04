@@ -20,7 +20,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
@@ -66,12 +65,10 @@ class CampaignControllerTest {
     @Test
     @WithMockUser(roles = {"ADMIN", "MARKETING"})
     void generateForExistingCampaign_returnsPosts() throws Exception {
-        when(campaignService.generatePostsForExistingCampaign(1L, 1))
+        when(campaignService.generatePostsForExistingCampaign(1L))
                 .thenReturn(List.of(new Post()));
 
-        mockMvc.perform(post("/campaigns/1/generate")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("postNumber", 1))))
+        mockMvc.perform(post("/campaigns/1/generate"))
                 .andExpect(status().isOk());
     }
 

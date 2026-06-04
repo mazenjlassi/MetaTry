@@ -8,5 +8,4 @@ public class CreateCampaignRequest {
     private Long conversationId;
     private String name;
     private String topic;
-    private int postNumber;
 }

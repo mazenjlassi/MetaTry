@@ -34,12 +34,8 @@ public class CampaignController {
     // 🔥 AI GENERATION - EXISTING CAMPAIGN
     @PostMapping("/{campaignId}/generate")
     @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
-    public List<Post> generateForExistingCampaign(
-            @PathVariable Long campaignId,
-            @RequestBody java.util.Map<String, Object> body
-    ) {
-        int postNumber = body.containsKey("postNumber") ? (int) body.get("postNumber") : 1;
-        return campaignService.generatePostsForExistingCampaign(campaignId, postNumber);
+    public List<Post> generateForExistingCampaign(@PathVariable Long campaignId) {
+        return campaignService.generatePostsForExistingCampaign(campaignId);
     }
 
     // 🔥 NEW: MANUAL CAMPAIGN

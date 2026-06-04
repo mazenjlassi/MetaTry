@@ -51,11 +51,10 @@ class CampaignServiceTest {
                 cloudinaryService, insightService, chatService);
     }
 
-    private CreateCampaignRequest createCampaignReq(String name, String topic, int postNumber) {
+    private CreateCampaignRequest createCampaignReq(String name, String topic) {
         CreateCampaignRequest r = new CreateCampaignRequest();
         r.setName(name);
         r.setTopic(topic);
-        r.setPostNumber(postNumber);
         return r;
     }
 
@@ -75,11 +74,11 @@ class CampaignServiceTest {
 
     @Test
     void createCampaignAndGeneratePosts_createsAndGenerates() {
-        CreateCampaignRequest request = createCampaignReq("Test Campaign", "AI Marketing", 3);
+        CreateCampaignRequest request = createCampaignReq("Test Campaign", "AI Marketing");
         Campaign savedCampaign = Campaign.builder().id(1L).name("Test Campaign").topic("AI Marketing").build();
         when(campaignRepository.save(any())).thenReturn(savedCampaign);
         when(insightService.generateCampaignInsights(1L)).thenThrow(new RuntimeException("No insights"));
-        when(aiContentService.generatePostsWithCampaign(eq("AI Marketing"), eq(3), any(), anyString(), anyString()))
+        when(aiContentService.generatePostsWithCampaign(eq("AI Marketing"), any(), anyString(), anyString()))
                 .thenReturn(List.of(Post.builder().id(1L).build()));
 
         List<Post> posts = campaignService.createCampaignAndGeneratePosts(request);
@@ -94,10 +93,10 @@ class CampaignServiceTest {
         when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
         when(insightService.generateCampaignInsights(1L)).thenThrow(new RuntimeException("No insights"));
         when(chatService.generateConclusion(null)).thenThrow(new RuntimeException("No chat"));
-        when(aiContentService.generatePostsWithCampaign(eq("AI"), eq(5), eq(campaign), anyString(), anyString()))
+        when(aiContentService.generatePostsWithCampaign(eq("AI"), eq(campaign), anyString(), anyString()))
                 .thenReturn(List.of(Post.builder().id(1L).build(), Post.builder().id(2L).build()));
 
-        List<Post> posts = campaignService.generatePostsForExistingCampaign(1L, 5);
+        List<Post> posts = campaignService.generatePostsForExistingCampaign(1L);
 
         assertThat(posts).hasSize(2);
     }
@@ -183,7 +182,7 @@ class CampaignServiceTest {
 
     @Test
     void createManualCampaign_savesAndReturns() {
-        CreateCampaignRequest request = createCampaignReq("Manual", "Topic", 0);
+        CreateCampaignRequest request = createCampaignReq("Manual", "Topic");
         when(campaignRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         Campaign result = campaignService.createManualCampaign(request);
