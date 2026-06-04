@@ -149,10 +149,23 @@ public class PostController {
 
     @PostMapping("/{id}/generate-image")
     @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
-    public ResponseEntity<PostImage> generateImage(@PathVariable Long id){
-
+    public ResponseEntity<PostImage> generateImage(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> body
+    ){
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        if (body != null) {
+            String customPrompt = body.get("prompt");
+            if (customPrompt != null && !customPrompt.isBlank()) {
+                PostImage existing = post.getImage();
+                if (existing != null) {
+                    existing.setImagePrompt(customPrompt);
+                    postImageRepository.save(existing);
+                }
+            }
+        }
 
         PostImage image = aiImageService.generateImageForPost(post);
 
