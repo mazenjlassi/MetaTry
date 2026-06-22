@@ -19,10 +19,10 @@ public class FacebookService {
     private final RestTemplate restTemplate;
     private final CloudinaryService cloudinaryService;
 
-    @Value("${facebook.page-id}")
+    @Value("${facebook.page-id:}")
     private String pageId;
 
-    @Value("${facebook.page-access-token}")
+    @Value("${facebook.page-access-token:}")
     private String token;
 
     private static final String GRAPH_API_URL = "https://graph.facebook.com/v19.0/";
@@ -58,5 +58,17 @@ public class FacebookService {
         } catch (Exception e) {
             return Map.of("success", false, "error", e.getMessage());
         }
+    }
+
+    public Map<String, Object> postVideoFromUrl(String videoUrl, String caption) {
+
+        String url = GRAPH_API_URL + pageId + "/videos";
+
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("file_url", videoUrl);
+        body.add("description", caption != null ? caption : "");
+        body.add("access_token", token);
+
+        return restTemplate.postForObject(url, body, Map.class);
     }
 }
