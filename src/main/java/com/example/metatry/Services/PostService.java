@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +49,10 @@ public class PostService {
                 .campaignId(post.getCampaign() != null ? post.getCampaign().getId() : null)
                 .campaignName(post.getCampaign() != null ? post.getCampaign().getName() : null)
                 .imageUrl(post.getImage() != null ? post.getImage().getImageUrl() : null)
+                .imageUrls(post.getImages() != null
+                        ? post.getImages().stream().map(PostImage::getImageUrl).toList()
+                        : List.of())
                 .status(post.getStatus().name())
-
                 .build();
     }
 
@@ -61,13 +63,11 @@ public class PostService {
         return mapToDto(post);
     }
 
-    // ================= UPDATE POST =================
     public Post updatePost(Long id, UpdatePostRequest request){
 
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
-        //  BLOCK update if published (unless permanent)
         if (post.getStatus() == PostStatus.PUBLISHED && !post.isPermanent()) {
             throw new RuntimeException("Cannot update a published non-permanent post");
         }
@@ -96,24 +96,33 @@ public class PostService {
         if(request.getLink() != null)
             post.setLink(request.getLink());
 
-        //  restrict platform change
         if(request.getPlatform() != null && post.getStatus() == PostStatus.DRAFT)
             post.setPlatform(request.getPlatform());
 
-        //  update image if exists
-        if(request.getImageUrl() != null && post.getImage() != null)
-            post.getImage().setImageUrl(request.getImageUrl());
+        if(request.getImageUrl() != null) {
+            PostImage first = post.getImage();
+            if (first != null) {
+                first.setImageUrl(request.getImageUrl());
+            } else {
+                PostImage newImage = new PostImage();
+                newImage.setImageUrl(request.getImageUrl());
+                newImage.setPost(post);
+                newImage.setSortOrder(0);
+                List<PostImage> images = post.getImages();
+                if (images == null) {
+                    images = new ArrayList<>();
+                    post.setImages(images);
+                }
+                images.add(newImage);
+            }
+        }
 
-        // update status logic
         if (post.getScheduledAt() != null && post.getStatus() != PostStatus.PUBLISHED) {
             post.setStatus(PostStatus.SCHEDULED);
         }
 
         return postRepository.save(post);
     }
-
-
-    // ================= DELETE =================
 
     public void deletePost(Long id){
 
@@ -123,11 +132,10 @@ public class PostService {
         postRepository.delete(post);
     }
 
-    // =================  CREATE MANUALLY =================
     public Post createPostForCampaign(
             Long campaignId,
             CreatePostRequest request,
-            MultipartFile image,
+            List<MultipartFile> images,
             MultipartFile video
     ) {
 
@@ -168,22 +176,30 @@ public class PostService {
             } catch (Exception e) {
                 throw new RuntimeException("Video upload failed: " + e.getMessage());
             }
-        } else if (image != null && !image.isEmpty()) {
-            try {
-                String imageUrl = cloudinaryService.uploadImage(image);
-                PostImage postImage = new PostImage();
-                postImage.setImageUrl(imageUrl);
-                postImage.setPost(post);
-                post.setImage(postImage);
-            } catch (Exception e) {
-                throw new RuntimeException("Image upload failed: " + e.getMessage());
+        } else if (images != null && !images.isEmpty()) {
+            List<PostImage> postImages = new ArrayList<>();
+            for (int i = 0; i < images.size(); i++) {
+                MultipartFile file = images.get(i);
+                if (file != null && !file.isEmpty()) {
+                    try {
+                        String imageUrl = cloudinaryService.uploadImage(file);
+                        PostImage postImage = PostImage.builder()
+                                .imageUrl(imageUrl)
+                                .sortOrder(i)
+                                .post(post)
+                                .selected(true)
+                                .build();
+                        postImages.add(postImage);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Image upload failed: " + e.getMessage());
+                    }
+                }
             }
+            post.setImages(postImages);
         }
 
         return postRepository.save(post);
     }
-
-    // ================= BASIC GET =================
 
     public List<Post> getPublishedPosts(){
         return postRepository.findByStatus(PostStatus.PUBLISHED);
@@ -201,12 +217,9 @@ public class PostService {
         return postRepository.findByPlatform(platform);
     }
 
-    // 🔥 NEW: Permanent posts
     public List<Post> getPermanentPosts(){
         return postRepository.findByPermanentTrue();
     }
-
-    // ================= STATS =================
 
     public PostStatsResponse getStats(){
 
@@ -230,16 +243,12 @@ public class PostService {
         );
     }
 
-    // ================= SCHEDULER =================
-
-    // Frontend: /posts/scheduled — returns future scheduled posts only
     public List<Post> getAllScheduledPosts() {
         return postRepository.findByStatusAndScheduledAtAfterOrderByScheduledAtAsc(
                 PostStatus.SCHEDULED, LocalDateTime.now().plusHours(1)
         );
     }
 
-    // Scheduler: only posts ready to publish (approved=true + time has arrived)
     public List<Post> getScheduledPostsToPublish() {
 
         return postRepository.findByApprovedTrueAndStatusAndScheduledAtBefore(
@@ -247,8 +256,6 @@ public class PostService {
                 LocalDateTime.now().plusHours(1)
         );
     }
-
-    // ================= CLEAN IMAGES =================
 
     public void cleanDuplicateImages() {
 
@@ -267,8 +274,6 @@ public class PostService {
             }
         }
     }
-
-    // ================= DASHBOARD =================
 
     public List<Post> getLatestPublishedPosts(int limit) {
 
@@ -294,19 +299,13 @@ public class PostService {
         ).getContent();
     }
 
-    // ================= POSTS DISPLAY =================
-
-    //  By campaign
     public List<Post> getPostsByCampaign(Long campaignId) {
         return postRepository.findByCampaignId(campaignId);
     }
 
-    //  Campaign + Status
     public List<Post> getCampaignPostsByStatus(Long campaignId, PostStatus status) {
         return postRepository.findByCampaignIdAndStatus(campaignId, status);
     }
-
-    // ================= POSTS SUMMARY (NEW - DO NOT TOUCH EXISTING METHODS) =================
 
     public List<PostSummaryDTO> getPostSummariesByCampaign(Long campaignId) {
         return postRepository.findByCampaignId(campaignId)
@@ -411,5 +410,28 @@ public class PostService {
         ).stream().limit(limit).toList();
     }
 
+    public Post addImagesToPost(Long postId, List<MultipartFile> files) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
 
+        int baseOrder = post.getImages() != null ? post.getImages().size() : 0;
+        for (int i = 0; i < files.size(); i++) {
+            MultipartFile file = files.get(i);
+            if (file != null && !file.isEmpty()) {
+                try {
+                    String imageUrl = cloudinaryService.uploadImage(file);
+                    PostImage postImage = PostImage.builder()
+                            .imageUrl(imageUrl)
+                            .sortOrder(baseOrder + i)
+                            .post(post)
+                            .selected(true)
+                            .build();
+                    post.getImages().add(postImage);
+                } catch (Exception e) {
+                    throw new RuntimeException("Image upload failed: " + e.getMessage());
+                }
+            }
+        }
+        return postRepository.save(post);
+    }
 }

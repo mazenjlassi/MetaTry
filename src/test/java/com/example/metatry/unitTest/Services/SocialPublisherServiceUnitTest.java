@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +53,7 @@ class SocialPublisherServiceUnitTest {
                 .approved(true)
                 .platform(PlatformType.INSTAGRAM)
                 .content("Test post")
-                .image(image)
+                .images(List.of(image))
                 .build();
         when(instagramService.postPhotoFromUrl(anyString(), anyString()))
                 .thenReturn(Map.of("success", true, "mediaId", "ig-123"));
@@ -86,7 +87,7 @@ class SocialPublisherServiceUnitTest {
                 .approved(true)
                 .platform(PlatformType.LINKEDIN)
                 .content("Test post")
-                .image(image)
+                .images(List.of(image))
                 .build();
         when(linkedInService.postArticleWithImage(anyString(), anyString(), anyString()))
                 .thenReturn(Map.of("success", true, "postId", "li-123"));
@@ -105,7 +106,7 @@ class SocialPublisherServiceUnitTest {
                 .platform(PlatformType.INSTAGRAM)
                 .content("Test post")
                 .platformPostId("ig-123")
-                .image(image)
+                .images(List.of(image))
                 .build();
         when(instagramService.postPhotoFromUrl(anyString(), anyString()))
                 .thenReturn(Map.of("success", true, "mediaId", "ig-123"));
@@ -124,7 +125,7 @@ class SocialPublisherServiceUnitTest {
                 .approved(true)
                 .platform(PlatformType.INSTAGRAM)
                 .content("Test")
-                .image(null)
+                .images(null)
                 .build();
 
         assertThatThrownBy(() -> socialPublisherService.publishPost(post))
@@ -139,7 +140,7 @@ class SocialPublisherServiceUnitTest {
                 .approved(true)
                 .platform(PlatformType.FACEBOOK)
                 .content("Test")
-                .image(image)
+                .images(List.of(image))
                 .build();
         when(facebookService.postPhotoFromUrl(anyString(), anyString()))
                 .thenReturn(Map.of("id", "fb-123"));
@@ -156,7 +157,7 @@ class SocialPublisherServiceUnitTest {
                 .approved(true)
                 .platform(PlatformType.LINKEDIN)
                 .content("Text only post")
-                .image(null)
+                .images(null)
                 .build();
         when(linkedInService.postText(anyString()))
                 .thenReturn(Map.of("success", true, "postId", "li-456"));
@@ -176,7 +177,7 @@ class SocialPublisherServiceUnitTest {
                 .approved(true)
                 .platform(PlatformType.INSTAGRAM)
                 .content("Test")
-                .image(image)
+                .images(List.of(image))
                 .build();
         when(instagramService.postPhotoFromUrl(anyString(), anyString()))
                 .thenReturn(Map.of("success", true, "mediaId", "ig-1"));
@@ -195,7 +196,7 @@ class SocialPublisherServiceUnitTest {
                 .approved(true)
                 .platform(PlatformType.FACEBOOK)
                 .content("Test")
-                .image(image)
+                .images(List.of(image))
                 .notificationSent(true)
                 .build();
         when(facebookService.postPhotoFromUrl(anyString(), anyString()))
@@ -215,7 +216,7 @@ class SocialPublisherServiceUnitTest {
                 .platform(PlatformType.INSTAGRAM)
                 .content("Test")
                 .platformPostId("ig-1")
-                .image(image)
+                .images(List.of(image))
                 .build();
         when(instagramService.postPhotoFromUrl(anyString(), anyString()))
                 .thenReturn(Map.of("success", true, "mediaId", "ig-1"));
@@ -251,7 +252,7 @@ class SocialPublisherServiceUnitTest {
                 .content("Main content")
                 .link("https://link.com/article")
                 .hashtags("#AI #Tech")
-                .image(image)
+                .images(List.of(image))
                 .build();
         when(linkedInService.postArticleWithImage(anyString(), anyString(), anyString()))
                 .thenReturn(Map.of("success", true, "postId", "li-1"));

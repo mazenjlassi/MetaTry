@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,19 +29,17 @@ public class SocialPublisherService {
         }
 
         String caption = buildCaption(post);
-        PostImage image = selectBestImage(post);
+        List<PostImage> images = selectImages(post);
 
         switch (post.getPlatform()) {
-            case INSTAGRAM -> publishInstagram(post, image, caption);
-            case FACEBOOK -> publishFacebook(post, image, caption);
-            case LINKEDIN -> publishLinkedIn(post, image, caption);
+            case INSTAGRAM -> publishInstagram(post, images, caption);
+            case FACEBOOK -> publishFacebook(post, images, caption);
+            case LINKEDIN -> publishLinkedIn(post, images, caption);
         }
 
-        // ✅ Set publish state
         post.setStatus(PostStatus.PUBLISHED);
         post.setPublishedAt(LocalDateTime.now());
 
-        // ✅ EMAIL (SAFE)
         if (post.getPlatformPostId() != null
                 && post.getStatus() == PostStatus.PUBLISHED
                 && !post.isNotificationSent()) {
@@ -49,7 +48,7 @@ public class SocialPublisherService {
                 emailService.sendPostPublishedEmail(post);
                 post.setNotificationSent(true);
             } catch (Exception e) {
-                System.out.println("❌ Email failed: " + e.getMessage());
+                System.out.println("Email failed: " + e.getMessage());
             }
         }
 
@@ -58,42 +57,34 @@ public class SocialPublisherService {
 
     private String buildCaption(Post post){
         String caption = post.getContent();
-        
+
         if (post.getLink() != null && !post.getLink().isBlank()) {
             caption += "\n\n" + post.getLink();
         }
-        
+
         if (post.getHashtags() != null && !post.getHashtags().isBlank()) {
             caption += "\n\n" + post.getHashtags();
         }
-        
+
         return caption;
     }
 
-    /**
-     *  select  image for the platform
-     */
-    private PostImage selectBestImage(Post post){
-
-        PostImage image = post.getImage();
-
-        if(image == null){
-            return null;
+    private List<PostImage> selectImages(Post post){
+        List<PostImage> images = post.getImages();
+        if (images == null || images.isEmpty()) {
+            return List.of();
         }
-
-        ImageSize preferredSize = switch(post.getPlatform()) {
-            case INSTAGRAM -> ImageSize.SQUARE;
-            case LINKEDIN, FACEBOOK -> ImageSize.LANDSCAPE;
-        };
-
-
-        return image;
+        return images.stream()
+                .filter(i -> Boolean.TRUE.equals(i.getSelected()))
+                .sorted((a, b) -> {
+                    int oa = a.getSortOrder() != null ? a.getSortOrder() : 0;
+                    int ob = b.getSortOrder() != null ? b.getSortOrder() : 0;
+                    return Integer.compare(oa, ob);
+                })
+                .toList();
     }
 
-    /**
-     * Instagram publishing (image or video)
-     */
-    private void publishInstagram(Post post, PostImage image, String caption){
+    private void publishInstagram(Post post, List<PostImage> images, String caption){
 
         Map<String,Object> response;
 
@@ -101,27 +92,27 @@ public class SocialPublisherService {
 
         if(videoUrl != null && !videoUrl.isBlank()){
             response = instagramService.postVideoFromUrl(videoUrl, caption);
-        } else if(image != null && image.getImageUrl() != null){
+        } else if (images.size() > 1) {
+            List<String> urls = images.stream().map(PostImage::getImageUrl).toList();
+            response = instagramService.postCarousel(urls, caption);
+        } else if (!images.isEmpty() && images.get(0).getImageUrl() != null){
             response = instagramService.postPhotoFromUrl(
-                    image.getImageUrl(),
+                    images.get(0).getImageUrl(),
                     caption
             );
         } else {
-            System.out.println("❌ Skipping Instagram post " + post.getId() + ": no image or video");
+            System.out.println("Skipping Instagram post " + post.getId() + ": no image or video");
             return;
         }
 
         if(Boolean.TRUE.equals(response.get("success"))){
             post.setPlatformPostId((String) response.get("mediaId"));
         } else {
-            System.out.println("❌ Instagram publish failed for post " + post.getId() + ": " + response.get("error"));
+            System.out.println("Instagram publish failed for post " + post.getId() + ": " + response.get("error"));
         }
     }
 
-    /**
-     * Facebook publishing (image, video, or text)
-     */
-    private void publishFacebook(Post post, PostImage image, String caption){
+    private void publishFacebook(Post post, List<PostImage> images, String caption){
 
         Map<String,Object> response;
 
@@ -129,33 +120,34 @@ public class SocialPublisherService {
 
         if(videoUrl != null && !videoUrl.isBlank()){
             response = facebookService.postVideoFromUrl(videoUrl, caption);
-        } else if(image != null && image.getImageUrl() != null){
+        } else if (images.size() > 1) {
+            List<String> urls = images.stream().map(PostImage::getImageUrl).toList();
+            response = facebookService.postMultiplePhotos(urls, caption);
+        } else if (!images.isEmpty() && images.get(0).getImageUrl() != null){
             response = facebookService.postPhotoFromUrl(
-                    image.getImageUrl(),
+                    images.get(0).getImageUrl(),
                     caption
             );
         } else {
             response = facebookService.postText(caption);
         }
 
-        //  Facebook returns "id"
         if(response != null && response.get("id") != null){
             post.setPlatformPostId((String) response.get("id"));
         }
     }
 
-    /**
-     * LinkedIn publishing
-     */
-    private void publishLinkedIn(Post post, PostImage image, String caption){
+    private void publishLinkedIn(Post post, List<PostImage> images, String caption){
 
         Map<String,Object> response;
 
-        if(image != null && image.getImageUrl() != null){
+        PostImage firstImage = images.isEmpty() ? null : images.get(0);
+
+        if(firstImage != null && firstImage.getImageUrl() != null){
 
             response = linkedInService.postArticleWithImage(
                     caption,
-                    image.getImageUrl(),
+                    firstImage.getImageUrl(),
                     "AI Generated Post"
             );
 

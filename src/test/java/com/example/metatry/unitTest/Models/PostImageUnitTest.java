@@ -38,7 +38,7 @@ class PostImageUnitTest {
     @Test
     void allArgsConstructor_setsAllFields() {
         Post post = Post.builder().id(2L).build();
-        PostImage image = new PostImage(1L, "url", "prompt", ImageSize.SQUARE, false, post);
+        PostImage image = new PostImage(1L, "url", "prompt", ImageSize.SQUARE, false, 0, post);
 
         assertThat(image.getId()).isEqualTo(1L);
         assertThat(image.getImageUrl()).isEqualTo("url");

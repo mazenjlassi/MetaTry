@@ -41,14 +41,11 @@ public class PostController {
     private final PostTimingService postTimingService;
     private final CloudinaryService cloudinaryService;
 
-    // ================= BASIC =================
-
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public List<Post> getAllPosts(){
         return postService.getAllPosts();
     }
-
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
@@ -86,8 +83,6 @@ public class PostController {
         return postService.getPostsByPlatform(platform);
     }
 
-    // ================= CAMPAIGN =================
-
     @GetMapping("/campaign/{id}")
     @PreAuthorize("isAuthenticated()")
     public List<Post> getByCampaign(@PathVariable Long id) {
@@ -103,8 +98,6 @@ public class PostController {
         return postService.getCampaignPostsByStatus(id, status);
     }
 
-    // ================= UPDATE =================
-
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<?> updatePost(
@@ -116,8 +109,6 @@ public class PostController {
         return ResponseEntity.ok(Map.of("message", "Post updated"));
     }
 
-    // ================= DELETE =================
-
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<?> deletePost(@PathVariable Long id){
@@ -127,28 +118,37 @@ public class PostController {
         return ResponseEntity.ok(Map.of("message", "Post deleted successfully"));
     }
 
-    // ================= CREATE MANUALLY =================
     @PostMapping(value = "/campaigns/{campaignId}/posts", consumes = "multipart/form-data")
     @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public Post createPost(
             @PathVariable Long campaignId,
             @RequestPart("data") CreatePostRequest request,
-            @RequestPart(value = "image", required = false) MultipartFile image,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @RequestPart(value = "image", required = false) MultipartFile singleImage,
             @RequestPart(value = "video", required = false) MultipartFile video
     ) {
-        return postService.createPostForCampaign(campaignId, request, image, video);
+        List<MultipartFile> effectiveImages = images;
+        if ((effectiveImages == null || effectiveImages.isEmpty()) && singleImage != null && !singleImage.isEmpty()) {
+            effectiveImages = List.of(singleImage);
+        }
+        return postService.createPostForCampaign(campaignId, request, effectiveImages, video);
     }
-    // ================= STATS =================
 
-
+    @PostMapping(value = "/{id}/images", consumes = "multipart/form-data")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
+    public ResponseEntity<Post> addImages(
+            @PathVariable Long id,
+            @RequestPart("images") List<MultipartFile> images
+    ) {
+        Post updated = postService.addImagesToPost(id, images);
+        return ResponseEntity.ok(updated);
+    }
 
     @GetMapping("/stats")
     @PreAuthorize("isAuthenticated()")
     public PostStatsResponse getStats(){
         return postService.getStats();
     }
-
-    // ================= AI IMAGE =================
 
     @PostMapping("/{id}/generate-image")
     @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
@@ -175,8 +175,6 @@ public class PostController {
         return ResponseEntity.ok(image);
     }
 
-    // ================= GENERIC UPLOAD =================
-
     @PostMapping("/upload")
     @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<Map<String, String>> uploadFile(
@@ -192,8 +190,6 @@ public class PostController {
         return ResponseEntity.ok(Map.of("url", url));
     }
 
-    // ================= CLEANUP =================
-
     @DeleteMapping("/cleanup-images")
     @PreAuthorize("hasAnyRole('ADMIN', 'MARKETING')")
     public ResponseEntity<?> cleanDuplicateImages(){
@@ -202,8 +198,6 @@ public class PostController {
 
         return ResponseEntity.ok(Map.of("message", "Duplicate images removed"));
     }
-
-    // ================= DASHBOARD =================
 
     @GetMapping("/latestPublished")
     @PreAuthorize("isAuthenticated()")

@@ -18,6 +18,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -317,7 +318,7 @@ class AiImageServiceUnitTest {
     @Test
     void generateImageForPost_existingImageNoPrompt_buildsPrompt() throws Exception {
         PostImage existingImage = PostImage.builder().id(1L).imagePrompt(null).size(ImageSize.SQUARE).build();
-        Post post = Post.builder().id(1L).title("AI Marketing Trends").platform(PlatformType.INSTAGRAM).image(existingImage).build();
+        Post post = Post.builder().id(1L).title("AI Marketing Trends").platform(PlatformType.INSTAGRAM).images(List.of(existingImage)).build();
         when(cloudflareConfig.getAccountId()).thenReturn("acct");
         when(cloudflareConfig.getApiToken()).thenReturn("tok");
         when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(byte[].class)))
@@ -335,7 +336,7 @@ class AiImageServiceUnitTest {
     @Test
     void generateImageForPost_existingImageWithPrompt_usesExistingPrompt() throws Exception {
         PostImage existingImage = PostImage.builder().id(1L).imagePrompt("custom prompt").size(ImageSize.SQUARE).build();
-        Post post = Post.builder().id(1L).title("Anything").platform(PlatformType.INSTAGRAM).image(existingImage).build();
+        Post post = Post.builder().id(1L).title("Anything").platform(PlatformType.INSTAGRAM).images(List.of(existingImage)).build();
         when(cloudflareConfig.getAccountId()).thenReturn("acct");
         when(cloudflareConfig.getApiToken()).thenReturn("tok");
         when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(byte[].class)))
@@ -354,7 +355,7 @@ class AiImageServiceUnitTest {
     @Test
     void generateImageForPost_usesExistingImageSize_whenSet() throws Exception {
         PostImage existingImage = PostImage.builder().id(1L).imagePrompt("prompt").size(ImageSize.PORTRAIT).build();
-        Post post = Post.builder().id(1L).platform(PlatformType.INSTAGRAM).image(existingImage).build();
+        Post post = Post.builder().id(1L).platform(PlatformType.INSTAGRAM).images(List.of(existingImage)).build();
         when(cloudflareConfig.getAccountId()).thenReturn("acct");
         when(cloudflareConfig.getApiToken()).thenReturn("tok");
         when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(byte[].class)))
@@ -374,7 +375,7 @@ class AiImageServiceUnitTest {
     @Test
     void generateImageForPost_usesPlatformDefaultSize_whenImageSizeNull() throws Exception {
         PostImage existingImage = PostImage.builder().id(1L).imagePrompt("prompt").size(null).build();
-        Post post = Post.builder().id(1L).platform(PlatformType.LINKEDIN).image(existingImage).build();
+        Post post = Post.builder().id(1L).platform(PlatformType.LINKEDIN).images(List.of(existingImage)).build();
         when(cloudflareConfig.getAccountId()).thenReturn("acct");
         when(cloudflareConfig.getApiToken()).thenReturn("tok");
         when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(byte[].class)))
@@ -466,7 +467,7 @@ class AiImageServiceUnitTest {
     @Test
     void buildPrompt_usesExistingPromptFromImage() throws Exception {
         PostImage existingImage = PostImage.builder().id(1L).imagePrompt("existing custom prompt text").size(ImageSize.SQUARE).build();
-        Post post = Post.builder().id(1L).title("Will be ignored").platform(PlatformType.INSTAGRAM).image(existingImage).build();
+        Post post = Post.builder().id(1L).title("Will be ignored").platform(PlatformType.INSTAGRAM).images(List.of(existingImage)).build();
         when(cloudflareConfig.getAccountId()).thenReturn("acct");
         when(cloudflareConfig.getApiToken()).thenReturn("tok");
         when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(byte[].class)))

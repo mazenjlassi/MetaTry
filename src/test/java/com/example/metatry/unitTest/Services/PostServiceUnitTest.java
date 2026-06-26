@@ -66,7 +66,7 @@ class PostServiceUnitTest {
                 .platform(PlatformType.LINKEDIN).scheduledAt(LocalDateTime.of(2024, 1, 1, 10, 0))
                 .publishedAt(LocalDateTime.of(2024, 1, 2, 10, 0))
                 .permanent(false).link("https://link.com").likes(10).commentsCount(5).shares(2)
-                .campaign(campaign).image(image)
+                .campaign(campaign).images(List.of(image))
                 .status(PostStatus.PUBLISHED).build();
 
         PostDto dto = postService.mapToDto(post);
@@ -173,7 +173,7 @@ class PostServiceUnitTest {
         request.setScheduledAt(LocalDateTime.of(2024, 7, 1, 9, 0));
         request.setPermanent(false);
 
-        Post result = postService.createPostForCampaign(1L, request, file, null);
+        Post result = postService.createPostForCampaign(1L, request, List.of(file), null);
 
         assertThat(result.getTitle()).isEqualTo("Manual Post");
         assertThat(result.getGeneratedByAI()).isFalse();
@@ -334,7 +334,8 @@ class PostServiceUnitTest {
                 .scheduledAt(LocalDateTime.of(2024, 8, 1, 10, 0))
                 .publishedAt(LocalDateTime.of(2024, 8, 1, 10, 0))
                 .status(PostStatus.SCHEDULED).platform(PlatformType.LINKEDIN)
-                .campaign(campaign).image(image).build();
+                .status(PostStatus.SCHEDULED).platform(PlatformType.LINKEDIN)
+                .campaign(campaign).images(List.of(image)).build();
         when(postRepository.findByStatusAndScheduledAtBetween(
                 eq(PostStatus.SCHEDULED), any(), any()))
                 .thenReturn(List.of(post));
@@ -457,7 +458,7 @@ class PostServiceUnitTest {
 
     @Test
     void updatePost_imageUrlOnlySetWhenImageExists() {
-        Post post = Post.builder().id(1L).status(PostStatus.DRAFT).image(null).build();
+        Post post = Post.builder().id(1L).status(PostStatus.DRAFT).images(null).build();
         when(postRepository.findById(1L)).thenReturn(Optional.of(post));
         when(postRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
@@ -521,7 +522,7 @@ class PostServiceUnitTest {
         request.setPlatform(PlatformType.LINKEDIN);
         request.setPermanent(false);
 
-        assertThatThrownBy(() -> postService.createPostForCampaign(1L, request, file, null))
+        assertThatThrownBy(() -> postService.createPostForCampaign(1L, request, List.of(file), null))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Image upload failed");
     }

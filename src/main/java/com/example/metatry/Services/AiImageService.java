@@ -37,8 +37,6 @@ public class AiImageService {
             "disfigured face, bad face, ugly face, missing fingers, extra digit, " +
             "bad hands, mutated hands, cloned face, morbid";
 
-    // ================= CLOUDFARE + CLOUDINARY =================
-
     public String generateAndUploadImage(String prompt, ImageSize size) {
 
         try {
@@ -119,8 +117,6 @@ public class AiImageService {
         };
     }
 
-    // ================= MAIN LOGIC =================
-
     public PostImage generateImageForPost(Post post){
 
         if (post == null) {
@@ -130,23 +126,25 @@ public class AiImageService {
         PostImage image = post.getImage();
         ImageSize size = imageSizeForPlatform(post.getPlatform());
 
-        // ✅ CASE 1: No image exists → create one
         if (image == null) {
             image = createImage(post, size);
             image.setSelected(true);
-            return postImageRepository.save(image);
+            image = postImageRepository.save(image);
+            if (post.getImages() == null) {
+                post.setImages(new ArrayList<>());
+            }
+            post.getImages().add(image);
+            return image;
         }
 
         String prompt = image.getImagePrompt();
         ImageSize existingSize = image.getSize() != null ? image.getSize() : size;
 
-        // ✅ CASE 2: Prompt missing → build one
         if (prompt == null || prompt.isBlank()) {
             prompt = buildPrompt(post, existingSize);
             image.setImagePrompt(prompt);
         }
 
-        // ✅ Generate AI image
         String imageUrl = generateAndUploadImage(prompt, existingSize);
 
         if (imageUrl == null || imageUrl.isBlank()) {
@@ -170,8 +168,6 @@ public class AiImageService {
         };
     }
 
-    // ================= CREATE IMAGE =================
-
     private PostImage createImage(Post post, ImageSize size){
 
         String prompt = buildPrompt(post, size);
@@ -193,8 +189,6 @@ public class AiImageService {
                 .selected(false)
                 .build();
     }
-
-    // ================= PROMPT BUILDER =================
 
     private String buildPrompt(Post post, ImageSize size){
 

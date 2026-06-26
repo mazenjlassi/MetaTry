@@ -11,8 +11,10 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;@Service
+import java.util.function.Supplier;
+@Service
 @RequiredArgsConstructor
 public class FacebookService {
 
@@ -70,5 +72,57 @@ public class FacebookService {
         body.add("access_token", token);
 
         return restTemplate.postForObject(url, body, Map.class);
+    }
+
+    public Map<String, Object> postMultiplePhotos(List<String> imageUrls, String message) {
+
+        try {
+            List<String> mediaIds = new java.util.ArrayList<>();
+
+            for (String imageUrl : imageUrls) {
+                String photoUrl = GRAPH_API_URL + pageId + "/photos?published=false";
+
+                MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+                body.add("url", imageUrl);
+                body.add("published", "false");
+                body.add("access_token", token);
+
+                Map photoRes = restTemplate.postForObject(photoUrl, body, Map.class);
+                String mediaId = photoRes.get("id").toString();
+                mediaIds.add(mediaId);
+            }
+
+            String feedUrl = GRAPH_API_URL + pageId + "/feed";
+
+            StringBuilder attachedMedia = new StringBuilder("[");
+            for (int i = 0; i < mediaIds.size(); i++) {
+                if (i > 0) attachedMedia.append(",");
+                attachedMedia.append("{\"media_fbid\":\"").append(mediaIds.get(i)).append("\"}");
+            }
+            attachedMedia.append("]");
+
+            String jsonBody = "{\"message\":\"" + escape(message) + "\",\"attached_media\":" + attachedMedia + ",\"access_token\":\"" + token + "\"}";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
+
+            return restTemplate.exchange(feedUrl, HttpMethod.POST, entity, Map.class).getBody();
+
+        } catch (Exception e) {
+            System.out.println("Facebook postMultiplePhotos failed: " + e.getMessage());
+            e.printStackTrace(System.out);
+            return Map.of("success", false, "error", e.getMessage());
+        }
+    }
+
+    private String escape(String text) {
+        if (text == null) return "";
+        return text
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "")
+                .replace("\t", " ");
     }
 }
